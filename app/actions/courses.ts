@@ -271,31 +271,91 @@ export async function seedDemoCourse(key: string) {
           objective: les.objective,
           durationMinutes: les.durationMinutes,
           content: les.content, // pre-filled, so no AI call on open
+          // Pre-filled formative so "complete the lesson" works without AI.
+          formativeQuestions: [
+            {
+              kind: "mcq",
+              question: `What is the main focus of "${les.title}"?`,
+              options: [
+                les.objective ?? "The core concept of this lesson",
+                "An unrelated topic",
+                "A topic from a different course",
+                "None of the above",
+              ],
+              answerIndex: 0,
+              sampleAnswer: null,
+              explanation: `This lesson focuses on: ${les.objective ?? les.title}.`,
+            },
+            {
+              kind: "open",
+              question: `In your own words, summarise one key takeaway from "${les.title}".`,
+              options: null,
+              answerIndex: null,
+              sampleAnswer: les.objective ?? "A clear summary of the lesson's main point.",
+              explanation: "A good answer restates the lesson's core idea in your own words.",
+            },
+          ],
         })
         .returning()
       await pushSchedule(les.title, "lesson", lessonRow.id, les.durationMinutes)
     }
 
-    if (mod.assessment) {
-      const a = mod.assessment
-      const [assessmentRow] = await db
-        .insert(assessments)
-        .values({
-          courseId: course.id,
-          moduleId: moduleRow.id,
-          userId,
-          type: a.type,
-          title: a.title,
-          description: a.description,
-          weekNumber: mod.weekNumber,
-          status: "pending",
-          // pre-filled questions / brief so the UI never needs to call AI
-          questions: a.type === "test" ? a.questions : a.brief,
-        })
-        .returning()
-      await pushSchedule(a.title, a.type, assessmentRow.id, a.type === "test" ? 45 : 120)
-    }
+    // Every week gets a summative test (uses pre-authored questions when present).
+    const a = mod.assessment
+    const sumTitle = a?.type === "test" ? a.title : `Week ${mod.weekNumber} summative test`
+    const sumDesc =
+      a?.type === "test"
+        ? a.description
+        : `A summative test covering week ${mod.weekNumber}: ${mod.title}.`
+    const [assessmentRow] = await db
+      .insert(assessments)
+      .values({
+        courseId: course.id,
+        moduleId: moduleRow.id,
+        userId,
+        type: "test",
+        category: "summative",
+        title: sumTitle,
+        description: sumDesc,
+        weekNumber: mod.weekNumber,
+        status: "pending",
+        questions: a?.type === "test" ? a.questions : null,
+      })
+      .returning()
+    await pushSchedule(sumTitle, "test", assessmentRow.id, 45)
   }
+
+  // Final capstone project that puts everything into practice.
+  const finalWeek = Math.max(...demo.modules.map((m) => m.weekNumber))
+  const demoFinal = demo.modules.flatMap((m) => (m.assessment?.type === "project" ? [m.assessment] : []))[0]
+  const [finalProject] = await db
+    .insert(assessments)
+    .values({
+      courseId: course.id,
+      moduleId: null,
+      userId,
+      type: "project",
+      category: "final",
+      title: demoFinal?.title ?? `Final project: ${demo.title}`,
+      description:
+        demoFinal?.description ??
+        `A comprehensive capstone project applying everything from ${demo.title}.`,
+      weekNumber: finalWeek,
+      status: "pending",
+      questions: demoFinal?.type === "project" ? demoFinal.brief : null,
+    })
+    .returning()
+  await db.insert(scheduleItems).values({
+    courseId: course.id,
+    userId,
+    weekNumber: finalWeek,
+    dayLabel: DAYS[0],
+    orderIndex: 99,
+    title: finalProject.title,
+    itemType: "project",
+    refId: finalProject.id,
+    durationMinutes: 240,
+  })
 
   revalidatePath("/dashboard")
   return course.id
