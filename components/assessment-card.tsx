@@ -1,17 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import type { Assessment, TestQuestion, ProjectBrief } from "@/lib/types"
-import { getAssessmentContent, submitTest, submitProject } from "@/app/actions/courses"
+import { getAssessmentContent, submitTest, submitProject, extractDocxText } from "@/app/actions/courses"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Markdown } from "@/components/markdown"
 import { cn } from "@/lib/utils"
-import { Check, ClipboardList, FolderGit2, Loader2, X } from "lucide-react"
+import { CalendarClock, Check, ClipboardList, Clock, FileUp, FolderGit2, Loader2, Trophy, X } from "lucide-react"
 
-export function AssessmentCard({ assessment }: { assessment: Assessment }) {
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  const hours = minutes / 60
+  const rounded = Number.isInteger(hours) ? hours : Math.round(hours * 10) / 10
+  return `${rounded} hr${rounded === 1 ? "" : "s"}`
+}
+
+function formatDueDate(date: Date): string {
+  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+}
+
+export function AssessmentCard({
+  assessment,
+  estimatedMinutes,
+  dueDate,
+}: {
+  assessment: Assessment
+  estimatedMinutes?: number
+  dueDate?: Date | null
+}) {
   const [data, setData] = useState<Assessment>(assessment)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -19,6 +38,7 @@ export function AssessmentCard({ assessment }: { assessment: Assessment }) {
 
   const isTest = data.type === "test"
   const isGraded = data.status === "graded"
+  const isFinal = data.category === "final"
 
   async function handleOpen() {
     const next = !open
@@ -43,7 +63,9 @@ export function AssessmentCard({ assessment }: { assessment: Assessment }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              {isTest ? (
+              {isFinal ? (
+                <Trophy className="h-4 w-4 text-primary" />
+              ) : isTest ? (
                 <ClipboardList className="h-4 w-4 text-primary" />
               ) : (
                 <FolderGit2 className="h-4 w-4 text-primary" />
@@ -52,11 +74,27 @@ export function AssessmentCard({ assessment }: { assessment: Assessment }) {
             <div>
               <div className="mb-1 flex items-center gap-2">
                 <Badge variant="outline" className="capitalize">
-                  {data.type}
+                  {isFinal ? "Final project" : isTest ? "Summative test" : data.type}
                 </Badge>
                 <span className="text-xs text-muted-foreground">Week {data.weekNumber}</span>
               </div>
               <CardTitle className="text-lg leading-snug">{data.title}</CardTitle>
+              {(estimatedMinutes || dueDate) && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  {estimatedMinutes ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      Est. {formatDuration(estimatedMinutes)}
+                    </span>
+                  ) : null}
+                  {dueDate ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarClock className="h-3.5 w-3.5" />
+                      Due {formatDueDate(dueDate)}
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
           {isGraded && (
@@ -82,7 +120,7 @@ export function AssessmentCard({ assessment }: { assessment: Assessment }) {
             )}
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            {data.questions && !loading && isTest && (
+            {Boolean(data.questions) && !loading && isTest && (
               <TestRunner
                 assessmentId={data.id}
                 questions={data.questions as TestQuestion[]}
@@ -91,7 +129,7 @@ export function AssessmentCard({ assessment }: { assessment: Assessment }) {
               />
             )}
 
-            {data.questions && !loading && !isTest && (
+            {Boolean(data.questions) && !loading && !isTest && (
               <ProjectRunner
                 assessmentId={data.id}
                 brief={data.questions as ProjectBrief}
@@ -223,18 +261,40 @@ function ProjectRunner({
   const [feedback, setFeedback] = useState<string | null>(initialFeedback)
   const [grading, setGrading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const graded = score !== null
 
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError(null)
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const { fileName: name, text } = await extractDocxText(formData)
+      setSubmission((prev) => (prev.trim() ? `${prev}\n\n${text}` : text))
+      setFileName(name)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read that Word document.")
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
   async function handleSubmit() {
     if (!submission.trim()) {
-      setError("Please write your submission before submitting.")
+      setError("Please write or upload your submission before submitting.")
       return
     }
     setError(null)
     setGrading(true)
     try {
-      const result = await submitProject(assessmentId, submission)
+      const result = await submitProject(assessmentId, submission, fileName ?? undefined)
       setScore(result.score)
       setFeedback(result.feedback)
       onGraded(result.score, result.feedback, submission)
@@ -272,11 +332,36 @@ function ProjectRunner({
       )}
 
       <div className="flex flex-col gap-2">
-        <h4 className="text-sm font-semibold text-foreground">Your submission</h4>
+        <div className="flex items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold text-foreground">Your submission</h4>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx"
+            className="sr-only"
+            onChange={handleFile}
+            aria-label="Upload a Word document"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={uploading || grading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+            Upload Word doc
+          </Button>
+        </div>
+        {fileName && (
+          <p className="text-xs text-muted-foreground">
+            Loaded from <span className="font-medium text-foreground">{fileName}</span>. You can edit the text below before submitting.
+          </p>
+        )}
         <Textarea
           value={submission}
           onChange={(e) => setSubmission(e.target.value)}
-          placeholder="Describe what you built, paste your work, or link to it…"
+          placeholder="Describe what you built, paste your work, link to it, or upload a Word (.docx) file…"
           rows={6}
           disabled={grading}
         />

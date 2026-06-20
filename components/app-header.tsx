@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
-import { LogOut, Plus } from "lucide-react"
+import { FileCheck2, LogOut, Plus } from "lucide-react"
 
 export function AppHeader({ userName, showNew = true }: { userName?: string; showNew?: boolean }) {
   const router = useRouter()
@@ -21,6 +21,12 @@ export function AppHeader({ userName, showNew = true }: { userName?: string; sho
         Curio
       </Link>
       <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/submissions">
+            <FileCheck2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Submissions</span>
+          </Link>
+        </Button>
         {showNew && (
           <Button asChild size="sm">
             <Link href="/new">

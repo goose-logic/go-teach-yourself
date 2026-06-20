@@ -20,6 +20,15 @@ export type ProjectBrief = {
   rubric: string[]
 }
 
+export type FormativeQuestion = {
+  kind: "mcq" | "open"
+  question: string
+  options: string[] | null
+  answerIndex: number | null
+  sampleAnswer: string | null
+  explanation: string
+}
+
 export type CourseDetail = {
   course: Course
   modules: Module[]

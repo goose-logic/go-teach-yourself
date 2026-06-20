@@ -96,6 +96,11 @@ export const lessons = pgTable("lessons", {
   content: text("content"), // full markdown lesson content
   durationMinutes: integer("durationMinutes").notNull().default(45),
   completed: boolean("completed").notNull().default(false),
+  // Per-lesson formative check: array of { kind: "mcq" | "open", question, options?[], answerIndex?, explanation? }
+  formativeQuestions: jsonb("formativeQuestions"),
+  formativeCompleted: boolean("formativeCompleted").notNull().default(false),
+  formativeScore: integer("formativeScore"),
+  formativeFeedback: text("formativeFeedback"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -112,10 +117,13 @@ export const assessments = pgTable("assessments", {
   // For tests: array of { question, options[], answerIndex, explanation }
   // For projects: array of rubric/requirement strings
   questions: jsonb("questions"),
+  category: text("category").notNull().default("summative"), // summative | final
   status: text("status").notNull().default("pending"), // pending | submitted | graded
   submission: text("submission"), // project text submission or notes
+  fileName: text("fileName"), // original uploaded Word doc name, if any
   score: integer("score"), // 0-100
   feedback: text("feedback"),
+  submittedAt: timestamp("submittedAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
