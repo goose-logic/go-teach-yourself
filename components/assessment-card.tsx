@@ -9,9 +9,28 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Markdown } from "@/components/markdown"
 import { cn } from "@/lib/utils"
-import { Check, ClipboardList, FileUp, FolderGit2, Loader2, Trophy, X } from "lucide-react"
+import { CalendarClock, Check, ClipboardList, Clock, FileUp, FolderGit2, Loader2, Trophy, X } from "lucide-react"
 
-export function AssessmentCard({ assessment }: { assessment: Assessment }) {
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  const hours = minutes / 60
+  const rounded = Number.isInteger(hours) ? hours : Math.round(hours * 10) / 10
+  return `${rounded} hr${rounded === 1 ? "" : "s"}`
+}
+
+function formatDueDate(date: Date): string {
+  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+}
+
+export function AssessmentCard({
+  assessment,
+  estimatedMinutes,
+  dueDate,
+}: {
+  assessment: Assessment
+  estimatedMinutes?: number
+  dueDate?: Date | null
+}) {
   const [data, setData] = useState<Assessment>(assessment)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -60,6 +79,22 @@ export function AssessmentCard({ assessment }: { assessment: Assessment }) {
                 <span className="text-xs text-muted-foreground">Week {data.weekNumber}</span>
               </div>
               <CardTitle className="text-lg leading-snug">{data.title}</CardTitle>
+              {(estimatedMinutes || dueDate) && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  {estimatedMinutes ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      Est. {formatDuration(estimatedMinutes)}
+                    </span>
+                  ) : null}
+                  {dueDate ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarClock className="h-3.5 w-3.5" />
+                      Due {formatDueDate(dueDate)}
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
           {isGraded && (
