@@ -203,8 +203,8 @@ export default async function SpecialistProfilePage({
                 </div>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   You keep <span className="font-medium text-foreground">{formatPricePrecise(fees.payoutCents)}</span> of
-                  every {formatPrice(s.priceCents)} session. Curio&apos;s fee is{" "}
-                  {fees.feePercent}% ({formatPricePrecise(fees.platformFeeCents)}).
+                  every {formatPrice(s.priceCents)} session. Curio&apos;s fee is {`${fees.feePercent}%`} (
+                  {formatPricePrecise(fees.platformFeeCents)}).
                 </p>
                 <Button asChild variant="outline" size="sm" className="mt-1">
                   <Link href={`/specialists/${s.id}/earnings`}>View earnings dashboard</Link>

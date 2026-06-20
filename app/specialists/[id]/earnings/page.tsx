@@ -179,11 +179,13 @@ export default async function EarningsPage({
           )}
         </section>
 
-        <p className="mt-6 inline-flex items-center gap-2 rounded-lg bg-secondary/50 px-4 py-3 text-xs text-muted-foreground">
+        <div className="mt-6 inline-flex items-center gap-2 rounded-lg bg-secondary/50 px-4 py-3 text-xs text-muted-foreground">
           <Badge variant="secondary">Demo</Badge>
-          Lifetime totals combine this specialist&apos;s prior sessions with live platform bookings to illustrate the
-          earnings and fee model.
-        </p>
+          <span>
+            Lifetime totals combine this specialist&apos;s prior sessions with live platform bookings to illustrate the
+            earnings and fee model.
+          </span>
+        </div>
       </main>
     </div>
   )
