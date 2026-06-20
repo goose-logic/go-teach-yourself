@@ -70,7 +70,7 @@ export default async function EarningsPage({
               <h2 className="font-serif text-lg font-semibold text-foreground">How each session pays out</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              Curio takes a transparent {feePercent}% platform fee on every session. Here&apos;s exactly how a single
+              Go Teach Yourself takes a transparent {feePercent}% platform fee on every session. Here&apos;s exactly how a single
               session breaks down.
             </p>
             <div className="rounded-xl border bg-secondary/30 p-5">
@@ -130,7 +130,7 @@ export default async function EarningsPage({
         {/* Recent platform bookings */}
         <section className="mt-8">
           <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">
-            Bookings through Curio
+            Bookings through Go Teach Yourself
             {platform.count > 0 ? <span className="text-muted-foreground"> ({platform.count})</span> : null}
           </h2>
           {platform.count === 0 ? (

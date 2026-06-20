@@ -1,6 +1,6 @@
 "use client"
 
-import type { ScheduleItem } from "@/lib/types"
+import type { ScheduleItem, Assessment } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, ClipboardList, Clock, FolderGit2, RotateCcw } from "lucide-react"
@@ -13,10 +13,24 @@ const TYPE_META: Record<string, { label: string; icon: typeof BookOpen }> = {
   review: { label: "Review", icon: RotateCcw },
 }
 
-export function TimetableTab({ schedule, totalWeeks }: { schedule: ScheduleItem[]; totalWeeks: number }) {
+export function TimetableTab({
+  schedule,
+  totalWeeks,
+  assessments = [],
+}: {
+  schedule: ScheduleItem[]
+  totalWeeks: number
+  assessments?: Assessment[]
+}) {
   const weeks = Array.from({ length: totalWeeks }, (_, i) => i + 1).filter((w) =>
     schedule.some((s) => s.weekNumber === w),
   )
+
+  // Map assessments by refId for quick lookup
+  const assessmentsByRef = new Map<string, Assessment>()
+  for (const a of assessments) {
+    assessmentsByRef.set(`${a.type}:${a.id}`, a)
+  }
 
   return (
     <div className="mt-2 flex flex-col gap-5">
@@ -40,12 +54,15 @@ export function TimetableTab({ schedule, totalWeeks }: { schedule: ScheduleItem[
                 {items.map((item) => {
                   const meta = TYPE_META[item.itemType] ?? TYPE_META.lesson
                   const Icon = meta.icon
+                  const assessment = item.refId ? assessmentsByRef.get(`${item.itemType}:${item.refId}`) : null
+                  const isSummative = assessment?.category === "summative"
+
                   return (
                     <div
                       key={item.id}
                       className={cn(
                         "flex items-center gap-3 rounded-lg border px-3 py-2.5",
-                        item.completed ? "bg-primary/5" : "bg-card",
+                        isSummative ? "border-primary/50 bg-primary/8" : item.completed ? "bg-primary/5" : "bg-card",
                       )}
                     >
                       <span className="flex w-12 shrink-0 justify-center">
@@ -56,13 +73,21 @@ export function TimetableTab({ schedule, totalWeeks }: { schedule: ScheduleItem[
                       <Icon className="h-4 w-4 shrink-0 text-primary" />
                       <span
                         className={cn(
-                          "flex-1 text-sm text-foreground",
+                          `flex-1 text-sm ${isSummative ? "font-bold" : ""} text-foreground`,
                           item.completed && "line-through opacity-60",
                         )}
                       >
                         {item.title}
                       </span>
                       <span className="hidden text-xs text-muted-foreground sm:inline">{meta.label}</span>
+                      {isSummative && (
+                        <>
+                          <span className="text-xs text-primary">Summative</span>
+                          {assessment?.gradeWeight > 0 && (
+                            <span className="text-xs font-medium text-primary">{assessment.gradeWeight}%</span>
+                          )}
+                        </>
+                      )}
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         {item.durationMinutes}m

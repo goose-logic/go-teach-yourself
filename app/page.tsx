@@ -24,7 +24,7 @@ export default async function HomePage() {
   return (
     <div className="flex min-h-svh flex-col">
       <header className="flex items-center justify-between px-6 py-5 md:px-10">
-        <span className="font-serif text-xl font-semibold text-foreground">Curio</span>
+        <span className="font-serif text-xl font-semibold text-foreground">Go Teach Yourself</span>
         <nav className="flex items-center gap-2">
           <Button asChild variant="ghost">
             <Link href="/specialists">Find a tutor</Link>
@@ -58,7 +58,7 @@ export default async function HomePage() {
               Design your own course. Learn anything, your way.
             </h1>
             <p className="text-pretty text-lg leading-relaxed text-muted-foreground">
-              Tell Curio what you want to learn. It asks a few smart questions, then builds a full curriculum,
+              Tell Go Teach Yourself what you want to learn. It asks a few smart questions, then builds a full curriculum,
               written lessons, a study timetable, plus tests and projects tailored to how you want to study.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -95,14 +95,14 @@ export default async function HomePage() {
               From idea to syllabus in minutes
             </h2>
             <p className="mx-auto mb-12 max-w-2xl text-center text-muted-foreground">
-              Curio turns a single sentence into a complete, structured learning experience.
+              Go Teach Yourself turns a single sentence into a complete, structured learning experience.
             </p>
             <div className="grid gap-6 md:grid-cols-3">
               {[
                 {
                   icon: Compass,
                   title: "Tell us your goal",
-                  body: "Type what you want to learn and why. Curio asks a few clarifying questions to understand your level and focus.",
+                  body: "Type what you want to learn and why. Go Teach Yourself asks a few clarifying questions to understand your level and focus.",
                 },
                 {
                   icon: BookOpen,
@@ -132,7 +132,7 @@ export default async function HomePage() {
                   <h3 className="mb-1 text-lg font-semibold text-foreground">Tests &amp; projects</h3>
                   <p className="leading-relaxed text-muted-foreground">
                     Check your understanding with auto-graded quizzes, and apply your skills with project briefs
-                    that Curio reviews and scores with personalized feedback.
+                    that Go Teach Yourself reviews and scores with personalized feedback.
                   </p>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default async function HomePage() {
       </main>
 
       <footer className="border-t px-6 py-8 text-center text-sm text-muted-foreground md:px-10">
-        Curio — design your own course, learn anything.
+        Go Teach Yourself — design your own course, learn anything.
       </footer>
     </div>
   )

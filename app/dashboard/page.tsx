@@ -5,11 +5,10 @@ import { auth } from "@/lib/auth"
 import { getCoursesWithProgress } from "@/app/actions/courses"
 import { AppHeader } from "@/components/app-header"
 import { DemoCourses } from "@/components/demo-courses"
+import { CourseCard } from "@/components/course-card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { BookOpen, CalendarDays, Clock, Plus, Sparkles, Users } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Plus, Sparkles, Users } from "lucide-react"
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -35,7 +34,7 @@ export default async function DashboardPage() {
               <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Book a tutor</p>
+              <p className="font-semibold text-foreground">Book a tutorial</p>
               <p className="text-sm text-muted-foreground">
                 Get one-on-one help from vetted, real-world experts in your subject.
               </p>
@@ -54,7 +53,7 @@ export default async function DashboardPage() {
                 <div>
                   <p className="text-lg font-medium text-foreground">No courses yet</p>
                   <p className="text-muted-foreground">
-                    Tell Curio what you want to learn and it will build a full course for you.
+                    Tell Go Teach Yourself what you want to learn and it will build a full course for you.
                   </p>
                 </div>
                 <Button asChild size="lg">
@@ -70,51 +69,21 @@ export default async function DashboardPage() {
         ) : (
           <>
             <div className="grid gap-5 sm:grid-cols-2">
-            {courses.map((course) => (
-              <Link key={course.id} href={`/course/${course.id}`} className="group">
-                <Card className="h-full transition-shadow group-hover:shadow-md">
-                  <CardHeader>
-                    <div className="mb-2 flex items-center gap-2">
-                      <Badge variant="secondary" className="capitalize">
-                        {course.level}
-                      </Badge>
-                      <Badge variant="outline">
-                        {course.pace === "full_time" ? "Full time" : "Part time"}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-balance leading-snug group-hover:text-primary">
-                      {course.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-4">
-                    <p className="line-clamp-2 text-sm text-muted-foreground">{course.summary}</p>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                          {course.completedLessons}/{course.totalLessons} lessons
-                        </span>
-                        <span>{course.progress}%</span>
-                      </div>
-                      <Progress value={course.progress} />
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <CalendarDays className="h-3.5 w-3.5" />
-                        {course.totalWeeks} weeks
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        {course.hoursPerWeek}h/week
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <BookOpen className="h-3.5 w-3.5" />
-                        {course.totalLessons} lessons
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+              {courses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  id={course.id}
+                  title={course.title}
+                  level={course.level}
+                  pace={course.pace}
+                  summary={course.summary}
+                  completedLessons={course.completedLessons}
+                  totalLessons={course.totalLessons}
+                  progress={course.progress}
+                  totalWeeks={course.totalWeeks}
+                  hoursPerWeek={course.hoursPerWeek}
+                />
+              ))}
             </div>
             <div className="mt-8">
               <DemoCourses />

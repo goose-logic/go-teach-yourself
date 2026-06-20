@@ -12,7 +12,7 @@ export default async function NewCoursePage() {
     <main className="min-h-svh bg-secondary/30">
       <header className="flex items-center justify-between px-6 py-5 md:px-10">
         <Link href="/dashboard" className="font-serif text-xl font-semibold text-foreground">
-          Curio
+          Go Teach Yourself
         </Link>
         <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
           Cancel

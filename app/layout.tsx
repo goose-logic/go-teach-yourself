@@ -16,9 +16,9 @@ const fraunces = Fraunces({
 })
 
 export const metadata: Metadata = {
-  title: "Curio — Design your own course",
+  title: "Go Teach Yourself — Design your own course",
   description:
-    "Tell Curio what you want to learn. It builds a full curriculum, lessons, a study timetable, tests and projects tailored to how you want to study.",
+    "Tell Go Teach Yourself what you want to learn. It builds a full curriculum, lessons, a study timetable, tests and projects tailored to how you want to study.",
   generator: "v0.app",
 }
 

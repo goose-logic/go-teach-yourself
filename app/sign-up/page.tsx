@@ -12,7 +12,7 @@ export default async function SignUpPage() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-secondary/40 px-4 py-12">
       <Link href="/" className="mb-8 font-serif text-2xl font-semibold text-foreground">
-        Curio
+        Go Teach Yourself
       </Link>
       <Card className="w-full max-w-md">
         <CardHeader>
