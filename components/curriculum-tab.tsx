@@ -70,7 +70,7 @@ export function CurriculumTab({
                           {isSummative && <span className="ml-2 text-xs font-normal text-primary">(Week end)</span>}
                         </span>
                         <span className="text-xs capitalize text-muted-foreground">
-                          {a.type} · see Tests &amp; Projects tab
+                          {a.type} · {a.gradeWeight > 0 && <span className="text-primary">{a.gradeWeight}%</span>} · see Tests &amp; Projects tab
                         </span>
                       </div>
                       {a.status === "graded" && (

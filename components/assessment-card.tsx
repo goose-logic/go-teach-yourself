@@ -77,6 +77,9 @@ export function AssessmentCard({
                   {isFinal ? "Final project" : isTest ? "Summative test" : data.type}
                 </Badge>
                 <span className="text-xs text-muted-foreground">Week {data.weekNumber}</span>
+                {data.gradeWeight > 0 && (
+                  <span className="text-xs font-medium text-primary">{data.gradeWeight}%</span>
+                )}
               </div>
               <CardTitle className="text-lg leading-snug">{data.title}</CardTitle>
               {(estimatedMinutes || dueDate) && (

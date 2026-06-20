@@ -80,7 +80,14 @@ export function TimetableTab({
                         {item.title}
                       </span>
                       <span className="hidden text-xs text-muted-foreground sm:inline">{meta.label}</span>
-                      {isSummative && <span className="text-xs text-primary">Summative</span>}
+                      {isSummative && (
+                        <>
+                          <span className="text-xs text-primary">Summative</span>
+                          {assessment?.gradeWeight > 0 && (
+                            <span className="text-xs font-medium text-primary">{assessment.gradeWeight}%</span>
+                          )}
+                        </>
+                      )}
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         {item.durationMinutes}m

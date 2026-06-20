@@ -118,6 +118,7 @@ export const assessments = pgTable("assessments", {
   // For projects: array of rubric/requirement strings
   questions: jsonb("questions"),
   category: text("category").notNull().default("summative"), // summative | final
+  gradeWeight: integer("gradeWeight").notNull().default(0), // percentage weight (0-100) for grade calculation
   status: text("status").notNull().default("pending"), // pending | submitted | graded
   submission: text("submission"), // project text submission or notes
   fileName: text("fileName"), // original uploaded Word doc name, if any
