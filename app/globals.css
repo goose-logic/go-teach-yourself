@@ -85,9 +85,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
-  --font-serif: var(--font-serif);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -125,4 +125,11 @@
     background-color: var(--background);
     color: var(--foreground);
   }
+}
+
+.prose-curio :first-child {
+  margin-top: 0;
+}
+.prose-curio :last-child {
+  margin-bottom: 0;
 }
