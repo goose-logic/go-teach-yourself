@@ -34,7 +34,7 @@ export default async function DashboardPage() {
               <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Book a tutor</p>
+              <p className="font-semibold text-foreground">Book a tutorial</p>
               <p className="text-sm text-muted-foreground">
                 Get one-on-one help from vetted, real-world experts in your subject.
               </p>
