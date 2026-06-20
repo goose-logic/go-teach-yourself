@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { getCoursesWithProgress } from "@/app/actions/courses"
 import { AppHeader } from "@/components/app-header"
+import { DemoCourses } from "@/components/demo-courses"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,27 +27,31 @@ export default async function DashboardPage() {
         </div>
 
         {courses.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <Sparkles className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-lg font-medium text-foreground">No courses yet</p>
-                <p className="text-muted-foreground">
-                  Tell Curio what you want to learn and it will build a full course for you.
-                </p>
-              </div>
-              <Button asChild size="lg">
-                <Link href="/new">
-                  <Plus className="h-4 w-4" />
-                  Design your first course
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-6">
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-medium text-foreground">No courses yet</p>
+                  <p className="text-muted-foreground">
+                    Tell Curio what you want to learn and it will build a full course for you.
+                  </p>
+                </div>
+                <Button asChild size="lg">
+                  <Link href="/new">
+                    <Plus className="h-4 w-4" />
+                    Design your first course
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <DemoCourses />
+          </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2">
+          <>
+            <div className="grid gap-5 sm:grid-cols-2">
             {courses.map((course) => (
               <Link key={course.id} href={`/course/${course.id}`} className="group">
                 <Card className="h-full transition-shadow group-hover:shadow-md">
@@ -92,7 +97,11 @@ export default async function DashboardPage() {
                 </Card>
               </Link>
             ))}
-          </div>
+            </div>
+            <div className="mt-8">
+              <DemoCourses />
+            </div>
+          </>
         )}
       </main>
     </div>

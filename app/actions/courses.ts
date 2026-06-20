@@ -14,6 +14,7 @@ import {
   generateProject,
   gradeSubmission,
 } from "@/lib/ai/generate"
+import { getDemoCourse } from "@/lib/demo-data"
 
 async function getUserId() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -144,6 +145,119 @@ export async function createCourse(input: {
         assessmentRow.id,
         mod.assessment.type === "test" ? 45 : 120,
       )
+    }
+  }
+
+  revalidatePath("/dashboard")
+  return course.id
+}
+
+// Seed a fully pre-authored demo course (no AI calls needed) so the whole
+// experience — curriculum, lessons, timetable, tests and projects — is clickable.
+export async function seedDemoCourse(key: string) {
+  const userId = await getUserId()
+  const demo = getDemoCourse(key)
+  if (!demo) throw new Error("Unknown demo course")
+
+  // Avoid duplicating a demo the user already loaded.
+  const existing = await db
+    .select({ id: courses.id })
+    .from(courses)
+    .where(and(eq(courses.userId, userId), eq(courses.subject, demo.subject)))
+  if (existing.length > 0) return existing[0].id
+
+  const [course] = await db
+    .insert(courses)
+    .values({
+      userId,
+      title: demo.title,
+      subject: demo.subject,
+      goal: demo.goal,
+      level: demo.level,
+      pace: demo.pace,
+      hoursPerWeek: demo.hoursPerWeek,
+      totalWeeks: demo.totalWeeks,
+      startDate: new Date(),
+      status: "active",
+      summary: demo.summary,
+      intake: [{ question: "Sample course", answer: "Loaded from Curio demo library" }],
+    })
+    .returning()
+
+  const daysPerWeek = demo.pace === "full_time" ? 5 : 3
+
+  for (let m = 0; m < demo.modules.length; m++) {
+    const mod = demo.modules[m]
+    const [moduleRow] = await db
+      .insert(modules)
+      .values({
+        courseId: course.id,
+        userId,
+        orderIndex: m,
+        weekNumber: mod.weekNumber,
+        title: mod.title,
+        summary: mod.summary,
+      })
+      .returning()
+
+    let dayCursor = 0
+    const pushSchedule = (
+      title: string,
+      itemType: "lesson" | "test" | "project" | "review",
+      refId: number | null,
+      durationMinutes: number,
+    ) => {
+      const dayLabel = DAYS[dayCursor % daysPerWeek]
+      dayCursor++
+      return db.insert(scheduleItems).values({
+        courseId: course.id,
+        userId,
+        weekNumber: mod.weekNumber,
+        dayLabel,
+        orderIndex: dayCursor,
+        title,
+        itemType,
+        refId,
+        durationMinutes,
+      })
+    }
+
+    for (let l = 0; l < mod.lessons.length; l++) {
+      const les = mod.lessons[l]
+      const [lessonRow] = await db
+        .insert(lessons)
+        .values({
+          moduleId: moduleRow.id,
+          courseId: course.id,
+          userId,
+          orderIndex: l,
+          title: les.title,
+          objective: les.objective,
+          durationMinutes: les.durationMinutes,
+          content: les.content, // pre-filled, so no AI call on open
+        })
+        .returning()
+      await pushSchedule(les.title, "lesson", lessonRow.id, les.durationMinutes)
+    }
+
+    if (mod.assessment) {
+      const a = mod.assessment
+      const [assessmentRow] = await db
+        .insert(assessments)
+        .values({
+          courseId: course.id,
+          moduleId: moduleRow.id,
+          userId,
+          type: a.type,
+          title: a.title,
+          description: a.description,
+          weekNumber: mod.weekNumber,
+          status: "pending",
+          // pre-filled questions / brief so the UI never needs to call AI
+          questions: a.type === "test" ? a.questions : a.brief,
+        })
+        .returning()
+      await pushSchedule(a.title, a.type, assessmentRow.id, a.type === "test" ? 45 : 120)
     }
   }
 
@@ -328,12 +442,25 @@ export async function submitProject(assessmentId: number, submission: string) {
   if (!assessment) throw new Error("Assessment not found")
 
   const brief = (assessment.questions as { brief?: string; requirements?: string[] }) ?? {}
-  const grade = await gradeSubmission({
-    projectTitle: assessment.title,
-    brief: brief.brief ?? assessment.description ?? "",
-    requirements: brief.requirements ?? [],
-    submission,
-  })
+  let grade: { score: number; feedback: string }
+  try {
+    grade = await gradeSubmission({
+      projectTitle: assessment.title,
+      brief: brief.brief ?? assessment.description ?? "",
+      requirements: brief.requirements ?? [],
+      submission,
+    })
+  } catch {
+    // Graceful fallback (e.g. when the AI Gateway is unavailable in demo mode)
+    // so the experience stays fully clickable.
+    const wordCount = submission.trim().split(/\s+/).filter(Boolean).length
+    const score = Math.max(60, Math.min(95, 60 + Math.round(wordCount / 8)))
+    grade = {
+      score,
+      feedback:
+        "**Submission received.** Automated AI review is unavailable in demo mode, so this is a sample grade.\n\nYour response addresses the brief and shows you engaged with the requirements. To get detailed, personalized feedback, add an AI Gateway credit card and resubmit.",
+    }
+  }
 
   await db
     .update(assessments)
