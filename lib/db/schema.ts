@@ -127,6 +127,41 @@ export const assessments = pgTable("assessments", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+// --- Specialist tutorial marketplace ---------------------------------------
+
+// A booked one-on-one tutorial session with a specialist.
+// Specialists themselves are mock/seeded data in lib/specialists.ts; bookings
+// and reviews are real, persisted, and scoped to the signed-in user.
+export const bookings = pgTable("bookings", {
+  id: serial("id").primaryKey(),
+  userId: text("userId").notNull(), // the learner who booked
+  specialistId: text("specialistId").notNull(),
+  specialistName: text("specialistName").notNull(),
+  expertise: text("expertise").notNull(),
+  sessionDate: timestamp("sessionDate").notNull(),
+  slotLabel: text("slotLabel").notNull(), // human-friendly slot, e.g. "Wed 25 Jun, 2:00 PM"
+  priceCents: integer("priceCents").notNull(),
+  platformFeeCents: integer("platformFeeCents").notNull(),
+  payoutCents: integer("payoutCents").notNull(),
+  feePercent: integer("feePercent").notNull().default(18),
+  status: text("status").notNull().default("upcoming"), // upcoming | completed | cancelled
+  // Last 4 digits of the (mock) card used, for the receipt.
+  cardLast4: text("cardLast4"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// A learner's rating + written review of a specialist, shown on the profile.
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  userId: text("userId").notNull(), // the reviewer
+  bookingId: integer("bookingId"),
+  specialistId: text("specialistId").notNull(),
+  reviewerName: text("reviewerName").notNull(),
+  rating: integer("rating").notNull(), // 1-5
+  comment: text("comment"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 // Timetable entries mapping work onto weeks/days.
 export const scheduleItems = pgTable("schedule_items", {
   id: serial("id").primaryKey(),

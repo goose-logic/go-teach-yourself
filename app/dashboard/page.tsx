@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { BookOpen, CalendarDays, Clock, Plus, Sparkles } from "lucide-react"
+import { BookOpen, CalendarDays, Clock, Plus, Sparkles, Users } from "lucide-react"
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -21,10 +21,28 @@ export default async function DashboardPage() {
     <div className="min-h-svh bg-secondary/20">
       <AppHeader userName={session.user.name} />
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-12">
-        <div className="mb-8 flex flex-col gap-1">
+        <div className="mb-6 flex flex-col gap-1">
           <h1 className="font-serif text-3xl font-semibold text-foreground">Your courses</h1>
           <p className="text-muted-foreground">Pick up where you left off, or design something new.</p>
         </div>
+
+        <Link
+          href="/specialists"
+          className="mb-8 flex items-center justify-between gap-4 rounded-xl border bg-card p-5 transition-colors hover:bg-secondary/40"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">Book a specialist</p>
+              <p className="text-sm text-muted-foreground">
+                Get one-on-one help from vetted, real-world experts in your subject.
+              </p>
+            </div>
+          </div>
+          <span className="hidden shrink-0 text-sm font-medium text-primary sm:inline">Browse specialists →</span>
+        </Link>
 
         {courses.length === 0 ? (
           <div className="flex flex-col gap-6">
