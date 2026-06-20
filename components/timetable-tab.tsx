@@ -66,8 +66,8 @@ export function TimetableTab({
                       )}
                     >
                       <span className="flex w-12 shrink-0 justify-center">
-                        <Badge variant={isSummative ? "default" : "outline"} className="font-mono">
-                          {item.dayLabel}
+                        <Badge variant={isSummative ? "default" : "outline"} className={isSummative ? "" : "font-mono"}>
+                          {isSummative ? "Summative" : item.dayLabel}
                         </Badge>
                       </span>
                       <Icon className={`h-4 w-4 shrink-0 ${isSummative ? "text-primary" : "text-primary"}`} />
