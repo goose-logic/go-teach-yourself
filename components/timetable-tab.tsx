@@ -66,11 +66,11 @@ export function TimetableTab({
                       )}
                     >
                       <span className="flex w-12 shrink-0 justify-center">
-                        <Badge variant={isSummative ? "default" : "outline"} className={isSummative ? "" : "font-mono"}>
-                          {isSummative ? "Summative" : item.dayLabel}
+                        <Badge variant="outline" className="font-mono">
+                          {item.dayLabel}
                         </Badge>
                       </span>
-                      <Icon className={`h-4 w-4 shrink-0 ${isSummative ? "text-primary" : "text-primary"}`} />
+                      <Icon className="h-4 w-4 shrink-0 text-primary" />
                       <span
                         className={cn(
                           `flex-1 text-sm ${isSummative ? "font-bold" : ""} text-foreground`,
@@ -78,9 +78,9 @@ export function TimetableTab({
                         )}
                       >
                         {item.title}
-                        {isSummative && <span className="ml-2 text-xs font-normal text-primary">(Week end)</span>}
                       </span>
                       <span className="hidden text-xs text-muted-foreground sm:inline">{meta.label}</span>
+                      {isSummative && <span className="text-xs text-primary">Summative</span>}
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         {item.durationMinutes}m
