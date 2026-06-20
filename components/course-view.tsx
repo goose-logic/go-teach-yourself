@@ -31,7 +31,7 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
         <Button asChild variant="ghost" size="sm">
           <Link href="/dashboard">
             <ArrowLeft className="h-4 w-4" />
-            Back to courses
+            Back
           </Link>
         </Button>
       </div>
