@@ -64,7 +64,7 @@ export default async function SpecialistProfilePage({
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          All specialists
+          All tutors
         </Link>
 
         {/* Header */}
@@ -160,7 +160,7 @@ export default async function SpecialistProfilePage({
                 <div className="flex items-center gap-2">
                   <BadgeCheck className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold text-foreground">
-                    {s.verified ? "Verified Specialist" : "Verification in progress"}
+                    {s.verified ? "Verified Tutor" : "Verification in progress"}
                   </h3>
                 </div>
                 <ul className="flex flex-col gap-3">
@@ -199,7 +199,7 @@ export default async function SpecialistProfilePage({
               <CardContent className="flex flex-col gap-3 p-5">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">For specialists</h3>
+                  <h3 className="font-semibold text-foreground">For tutors</h3>
                 </div>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   You keep <span className="font-medium text-foreground">{formatPricePrecise(fees.payoutCents)}</span> of

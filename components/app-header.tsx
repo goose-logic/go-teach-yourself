@@ -24,7 +24,7 @@ export function AppHeader({ userName, showNew = true }: { userName?: string; sho
         <Button asChild variant="ghost" size="sm">
           <Link href="/specialists">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Specialists</span>
+            <span className="hidden sm:inline">Tutors</span>
           </Link>
         </Button>
         <Button asChild variant="ghost" size="sm">

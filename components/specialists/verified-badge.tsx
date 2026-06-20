@@ -29,15 +29,15 @@ export function VerifiedBadge({
             )}
           >
             {verified ? <BadgeCheck className={icon} /> : <Clock className={icon} />}
-            {verified ? "Verified Specialist" : "Verification pending"}
+            {verified ? "Verified Tutor" : "Verification pending"}
           </button>
         </TooltipTrigger>
         <TooltipContent>
           {verified ? (
             <div className="flex flex-col gap-1.5">
-              <p className="font-semibold text-foreground">How we vet specialists</p>
+              <p className="font-semibold text-foreground">How we vet tutors</p>
               <p className="text-muted-foreground">
-                Every Verified Specialist has passed our three-step check before being allowed to list:
+                Every Verified Tutor has passed our three-step check before being allowed to list:
               </p>
               <ul className="flex flex-col gap-1 text-muted-foreground">
                 <li className="flex items-start gap-1.5">
@@ -56,7 +56,7 @@ export function VerifiedBadge({
             </div>
           ) : (
             <p className="text-muted-foreground">
-              This specialist is partway through our three-step vetting (LinkedIn check, reference check, and a
+              This tutor is partway through our three-step vetting (LinkedIn check, reference check, and a
               sample-session interview) and can&apos;t take bookings until it&apos;s complete.
             </p>
           )}

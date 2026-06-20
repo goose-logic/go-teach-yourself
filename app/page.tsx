@@ -27,7 +27,7 @@ export default async function HomePage() {
         <span className="font-serif text-xl font-semibold text-foreground">Curio</span>
         <nav className="flex items-center gap-2">
           <Button asChild variant="ghost">
-            <Link href="/specialists">Find a specialist</Link>
+            <Link href="/specialists">Find a tutor</Link>
           </Button>
           {authed ? (
             <Button asChild>
@@ -162,14 +162,14 @@ export default async function HomePage() {
             <div className="mx-auto mb-12 flex max-w-2xl flex-col items-center text-center">
               <span className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground">
                 <Users className="h-4 w-4 text-primary" />
-                Specialist marketplace
+                Tutor marketplace
               </span>
               <h2 className="mb-3 text-balance font-serif text-3xl font-semibold text-foreground">
-                Stuck on something? Book a real-world specialist
+                Stuck on something? Book a real-world tutor
               </h2>
               <p className="text-pretty leading-relaxed text-muted-foreground">
-                Go beyond AI lessons with one-on-one sessions led by vetted practitioners — not lecturers, but
-                people with hands-on expertise in your subject. Every specialist is verified before they can list.
+                Go beyond AI lessons with one-on-one tutorials led by vetted practitioners — not lecturers, but
+                people with hands-on expertise in your subject. Every tutor is verified before they can list.
               </p>
             </div>
 
@@ -193,7 +193,7 @@ export default async function HomePage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="truncate font-semibold text-foreground">{s.name}</span>
-                        <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified specialist" />
+                        <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified tutor" />
                       </div>
                       <p className="truncate text-sm text-muted-foreground">{s.expertise}</p>
                     </div>
@@ -218,9 +218,9 @@ export default async function HomePage() {
               <div className="flex items-start gap-4 rounded-xl border bg-card p-6">
                 <BadgeCheck className="mt-1 h-6 w-6 shrink-0 text-primary" />
                 <div>
-                  <h3 className="mb-1 font-semibold text-foreground">Vetted specialists</h3>
+                  <h3 className="mb-1 font-semibold text-foreground">Vetted tutors</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Every specialist passes a LinkedIn review, a reference check, and a sample session interview
+                    Every tutor passes a LinkedIn review, a reference check, and a sample session interview
                     before they can list.
                   </p>
                 </div>
@@ -240,8 +240,8 @@ export default async function HomePage() {
                 <div>
                   <h3 className="mb-1 font-semibold text-foreground">Rate &amp; review</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    After each session, leave a rating and review to help the next learner choose the right
-                    specialist.
+                    After each tutorial, leave a rating and review to help the next learner choose the right
+                    tutor.
                   </p>
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default async function HomePage() {
 
             <div className="mt-12 flex justify-center">
               <Button asChild size="lg" variant="outline">
-                <Link href="/specialists">Browse all specialists</Link>
+                <Link href="/specialists">Browse all tutors</Link>
               </Button>
             </div>
           </div>

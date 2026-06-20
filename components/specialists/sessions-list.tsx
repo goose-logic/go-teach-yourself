@@ -80,7 +80,7 @@ function ReviewForm({
       <Textarea
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        placeholder="Share what was helpful — your review appears on the specialist's profile."
+        placeholder="Share what was helpful — your review appears on the tutor's profile."
         rows={3}
       />
       <div className="flex items-center gap-2">

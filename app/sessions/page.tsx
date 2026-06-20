@@ -39,11 +39,11 @@ export default async function SessionsPage() {
               <div>
                 <p className="text-lg font-medium text-foreground">No sessions booked yet</p>
                 <p className="text-muted-foreground">
-                  Browse our vetted specialists and book a one-on-one tutorial.
+                  Browse our vetted tutors and book a one-on-one tutorial.
                 </p>
               </div>
               <Button asChild size="lg">
-                <Link href="/specialists">Find a specialist</Link>
+                <Link href="/specialists">Find a tutor</Link>
               </Button>
             </CardContent>
           </Card>
