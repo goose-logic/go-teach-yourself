@@ -136,10 +136,6 @@ export async function createCourse(input: {
       mod.assessment?.description ??
       `A summative test covering the lessons from week ${mod.weekNumber}: ${mod.title}.`
     
-    // Calculate grade weight for summative tests: total 70% distributed evenly across weeks
-    const numWeeks = curriculum.modules.length
-    const summativeWeightPerTest = Math.floor(70 / numWeeks)
-    
     const [assessmentRow] = await db
       .insert(assessments)
       .values({
@@ -151,7 +147,7 @@ export async function createCourse(input: {
         title: summativeTitle,
         description: summativeDesc,
         weekNumber: mod.weekNumber,
-        gradeWeight: summativeWeightPerTest,
+        gradeWeight: 7, // 7% per summative test (70% total across 10 weeks)
         status: "pending",
       })
       .returning()
@@ -175,7 +171,7 @@ export async function createCourse(input: {
         `A comprehensive capstone project that brings together everything from the whole course ` +
         `("${input.subject}"). It should require the learner to apply the skills and knowledge built across all ${finalWeek} weeks.`,
       weekNumber: finalWeek,
-      gradeWeight: 30,
+      gradeWeight: 37, // 37% for the capstone project
       status: "pending",
     })
     .returning()
@@ -315,10 +311,6 @@ export async function seedDemoCourse(key: string) {
         ? a.description
         : `A summative test covering week ${mod.weekNumber}: ${mod.title}.`
     
-    // Calculate grade weight for summative tests: total 70% distributed evenly across weeks
-    const demoNumWeeks = demo.modules.length
-    const demoSummativeWeightPerTest = Math.floor(70 / demoNumWeeks)
-    
     const [assessmentRow] = await db
       .insert(assessments)
       .values({
@@ -330,7 +322,7 @@ export async function seedDemoCourse(key: string) {
         title: sumTitle,
         description: sumDesc,
         weekNumber: mod.weekNumber,
-        gradeWeight: demoSummativeWeightPerTest,
+        gradeWeight: 7, // 7% per summative test (70% total across 10 weeks)
         status: "pending",
         questions: a?.type === "test" ? a.questions : null,
       })
@@ -354,7 +346,7 @@ export async function seedDemoCourse(key: string) {
         demoFinal?.description ??
         `A comprehensive capstone project applying everything from ${demo.title}.`,
       weekNumber: finalWeek,
-      gradeWeight: 30,
+      gradeWeight: 37, // 37% for the capstone project
       status: "pending",
       questions: demoFinal?.type === "project" ? demoFinal.brief : null,
     })
