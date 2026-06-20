@@ -1,14 +1,16 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import type { CourseDetail } from "@/lib/types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
 import { CurriculumTab } from "@/components/curriculum-tab"
 import { TimetableTab } from "@/components/timetable-tab"
 import { AssessmentsTab } from "@/components/assessments-tab"
-import { CalendarDays, Clock, Target } from "lucide-react"
+import { ArrowLeft, CalendarDays, Clock, Target } from "lucide-react"
 
 export function CourseView({ detail }: { detail: CourseDetail }) {
   const { course } = detail
@@ -24,6 +26,16 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-10">
+      {/* Back button */}
+      <div className="mb-6">
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/dashboard">
+            <ArrowLeft className="h-4 w-4" />
+            Back to courses
+          </Link>
+        </Button>
+      </div>
+
       {/* Course header */}
       <div className="mb-8 flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
