@@ -68,6 +68,41 @@ export const lessonContentSchema = z.object({
     ),
 })
 
+// --- Per-lesson formative check (MCQs + open answer) ------------------------
+export const formativeSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        kind: z.enum(["mcq", "open"]),
+        question: z.string(),
+        // For mcq only (nullable for open questions, to satisfy strict mode).
+        options: z.array(z.string()).nullable().describe("3-4 options for mcq, null for open"),
+        answerIndex: z
+          .number()
+          .int()
+          .nullable()
+          .describe("index of correct option for mcq, null for open"),
+        // For open only.
+        sampleAnswer: z
+          .string()
+          .nullable()
+          .describe("a model answer used to assess the learner's open response, null for mcq"),
+        explanation: z.string().describe("why the answer is correct / what a good answer covers"),
+      }),
+    )
+    .min(3)
+    .max(5)
+    .describe("2-3 multiple choice questions and 1-2 open answer questions"),
+})
+
+export type GeneratedFormative = z.infer<typeof formativeSchema>
+
+// --- Grading an open formative answer ---------------------------------------
+export const openGradeSchema = z.object({
+  correct: z.boolean().describe("whether the open answer demonstrates understanding"),
+  feedback: z.string().describe("one or two short sentences of feedback"),
+})
+
 // --- Test questions ---------------------------------------------------------
 export const testSchema = z.object({
   questions: z

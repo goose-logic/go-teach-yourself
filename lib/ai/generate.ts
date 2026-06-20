@@ -5,6 +5,8 @@ import {
   questionsSchema,
   curriculumSchema,
   lessonContentSchema,
+  formativeSchema,
+  openGradeSchema,
   testSchema,
   projectSchema,
   gradeSchema,
@@ -36,24 +38,29 @@ export async function generateCurriculum(params: {
   goal: string
   pace: "full_time" | "part_time"
   hoursPerWeek: number
+  totalWeeks: number
   answers: IntakeAnswer[]
 }) {
-  const { subject, goal, pace, hoursPerWeek, answers } = params
+  const { subject, goal, pace, hoursPerWeek, totalWeeks, answers } = params
   const { experimental_output } = await generateText({
     model: MODEL,
     experimental_output: Output.object({ schema: curriculumSchema }),
     system:
       "You are an expert curriculum designer. Build a complete, well-sequenced course broken into weekly modules. " +
-      "Each module has 2-6 lessons with clear objectives and realistic durations. Add a test or project to most weeks, " +
-      "ending with a capstone project. Scale the total number of weeks and weekly workload to the learner's pace and " +
-      "available hours: full-time learners cover more per week; part-time learners need a longer, lighter schedule.",
+      `The course MUST be exactly ${totalWeeks} week(s) long: produce exactly ${totalWeeks} modules, one per week, ` +
+      "numbered 1.. sequentially. Each module has 2-6 lessons with clear objectives and realistic durations. " +
+      "EVERY week must end with a summative assessment of type 'test' that covers that week's lessons (set assessment.type to 'test'). " +
+      "Do NOT use type 'project' for the weekly assessments — a separate final capstone project is added at the end of the course. " +
+      "Scale the weekly workload to the learner's available hours.",
     prompt:
       `Subject: ${subject}\n` +
       `Goal: ${goal || "general proficiency"}\n` +
+      `Total length: exactly ${totalWeeks} weeks\n` +
       `Study pace: ${pace === "full_time" ? "Full time" : "Part time"}\n` +
       `Hours available per week: ${hoursPerWeek}\n` +
       `Intake answers:\n${intakeToText(answers)}\n\n` +
-      `Design the curriculum so that the sum of lesson + assessment time each week is close to the hours available.`,
+      `Design the curriculum so that the sum of lesson + assessment time each week is close to the hours available. ` +
+      `Remember: exactly ${totalWeeks} weekly modules, each with a summative 'test'.`,
   })
   return experimental_output
 }
@@ -76,6 +83,47 @@ export async function generateLessonContent(params: {
       `Learning objective: ${params.objective}\n\nWrite the lesson content.`,
   })
   return experimental_output.content
+}
+
+// Generate a per-lesson formative check: 2-3 MCQs + 1-2 open questions.
+export async function generateFormative(params: {
+  courseTitle: string
+  lessonTitle: string
+  objective: string
+  content: string
+}) {
+  const { experimental_output } = await generateText({
+    model: MODEL,
+    experimental_output: Output.object({ schema: formativeSchema }),
+    system:
+      "You are an assessment designer creating a short FORMATIVE check for a single lesson. " +
+      "Produce 2-3 multiple-choice questions (kind 'mcq', each with 3-4 options, one correct answerIndex, and a short explanation) " +
+      "and 1-2 open-answer questions (kind 'open', with a concise sampleAnswer and explanation, and null options/answerIndex). " +
+      "Base every question strictly on the lesson content provided.",
+    prompt:
+      `Course: ${params.courseTitle}\nLesson: ${params.lessonTitle}\nObjective: ${params.objective}\n\n` +
+      `Lesson content:\n${params.content}\n\nWrite the formative check.`,
+  })
+  return experimental_output.questions
+}
+
+// Grade a single open formative answer against the model answer.
+export async function gradeOpenAnswer(params: {
+  question: string
+  sampleAnswer: string
+  learnerAnswer: string
+}) {
+  const { experimental_output } = await generateText({
+    model: MODEL,
+    experimental_output: Output.object({ schema: openGradeSchema }),
+    system:
+      "You assess a learner's short open answer against a model answer. Be encouraging but honest. " +
+      "Mark correct if it shows reasonable understanding, even if worded differently.",
+    prompt:
+      `Question: ${params.question}\nModel answer: ${params.sampleAnswer}\n` +
+      `Learner answer: ${params.learnerAnswer}\n\nAssess it.`,
+  })
+  return experimental_output
 }
 
 // Generate a multiple-choice test.

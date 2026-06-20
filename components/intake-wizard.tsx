@@ -32,10 +32,34 @@ export function IntakeWizard() {
   const [goal, setGoal] = useState("")
 
   const [questions, setQuestions] = useState<Question[]>([])
+  // Selected option label per question (may be "All of the above" or "Other").
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  // Free text entered when "Other" is chosen.
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({})
 
   const [pace, setPace] = useState<"full_time" | "part_time">("part_time")
   const [hoursPerWeek, setHoursPerWeek] = useState(6)
+  const [totalWeeks, setTotalWeeks] = useState(4)
+
+  const LENGTH_OPTIONS = [
+    { label: "2 weeks", weeks: 2 },
+    { label: "4 weeks", weeks: 4 },
+    { label: "6 weeks", weeks: 6 },
+    { label: "3 months", weeks: 12 },
+  ]
+
+  // Resolve the final answer text for a question, expanding the special options.
+  function resolveAnswer(q: Question): string {
+    const selected = answers[q.id]
+    if (!selected) return "No preference"
+    if (selected === "All of the above") {
+      return `All of the above (${q.options.join(", ")})`
+    }
+    if (selected === "Other") {
+      return customAnswers[q.id]?.trim() || "Other"
+    }
+    return selected
+  }
 
   async function handleTopicNext() {
     if (!subject.trim()) {
@@ -64,9 +88,10 @@ export function IntakeWizard() {
       goal,
       pace,
       hoursPerWeek,
+      totalWeeks,
       answers: questions.map((q) => ({
         question: q.question,
-        answer: answers[q.id] || "No preference",
+        answer: resolveAnswer(q),
       })),
     }
     createCourse(payload)
@@ -163,7 +188,7 @@ export function IntakeWizard() {
                   {q.helper && <p className="text-sm text-muted-foreground">{q.helper}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {q.options.map((opt) => {
+                  {[...q.options, "All of the above", "Other"].map((opt) => {
                     const selected = answers[q.id] === opt
                     return (
                       <button
@@ -182,13 +207,14 @@ export function IntakeWizard() {
                     )
                   })}
                 </div>
-                {q.allowCustom && (
+                {answers[q.id] === "Other" && (
                   <Input
-                    placeholder="Or type your own answer"
-                    value={
-                      q.options.includes(answers[q.id]) ? "" : answers[q.id] || ""
+                    placeholder="Tell us more…"
+                    autoFocus
+                    value={customAnswers[q.id] || ""}
+                    onChange={(e) =>
+                      setCustomAnswers((a) => ({ ...a, [q.id]: e.target.value }))
                     }
-                    onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
                   />
                 )}
               </div>
@@ -264,6 +290,30 @@ export function IntakeWizard() {
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>2h</span>
                 <span>40h</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label>How long would you like your course to be?</Label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {LENGTH_OPTIONS.map((opt) => {
+                  const selected = totalWeeks === opt.weeks
+                  return (
+                    <button
+                      key={opt.weeks}
+                      type="button"
+                      onClick={() => setTotalWeeks(opt.weeks)}
+                      className={
+                        "rounded-lg border px-4 py-3 text-sm font-medium transition-colors " +
+                        (selected
+                          ? "border-primary bg-primary/5 text-foreground"
+                          : "border-border bg-card text-muted-foreground hover:bg-secondary")
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

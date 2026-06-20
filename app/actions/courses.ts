@@ -10,10 +10,13 @@ import {
   generateQuestions,
   generateCurriculum,
   generateLessonContent,
+  generateFormative,
+  gradeOpenAnswer,
   generateTest,
   generateProject,
   gradeSubmission,
 } from "@/lib/ai/generate"
+import type { FormativeQuestion } from "@/lib/types"
 import { getDemoCourse } from "@/lib/demo-data"
 
 async function getUserId() {
@@ -38,6 +41,7 @@ export async function createCourse(input: {
   goal: string
   pace: "full_time" | "part_time"
   hoursPerWeek: number
+  totalWeeks: number
   answers: { question: string; answer: string }[]
 }) {
   const userId = await getUserId()
@@ -47,6 +51,7 @@ export async function createCourse(input: {
     goal: input.goal,
     pace: input.pace,
     hoursPerWeek: input.hoursPerWeek,
+    totalWeeks: input.totalWeeks,
     answers: input.answers,
   })
 
@@ -60,7 +65,7 @@ export async function createCourse(input: {
       level: curriculum.level,
       pace: input.pace,
       hoursPerWeek: input.hoursPerWeek,
-      totalWeeks: curriculum.totalWeeks,
+      totalWeeks: input.totalWeeks,
       startDate: new Date(),
       status: "active",
       summary: curriculum.summary,
@@ -125,28 +130,59 @@ export async function createCourse(input: {
       await pushSchedule(les.title, "lesson", lessonRow.id, les.durationMinutes)
     }
 
-    if (mod.assessment) {
-      const [assessmentRow] = await db
-        .insert(assessments)
-        .values({
-          courseId: course.id,
-          moduleId: moduleRow.id,
-          userId,
-          type: mod.assessment.type,
-          title: mod.assessment.title,
-          description: mod.assessment.description,
-          weekNumber: mod.weekNumber,
-          status: "pending",
-        })
-        .returning()
-      await pushSchedule(
-        mod.assessment.title,
-        mod.assessment.type,
-        assessmentRow.id,
-        mod.assessment.type === "test" ? 45 : 120,
-      )
-    }
+    // Every week ends with a summative test covering that week's lessons.
+    const summativeTitle = mod.assessment?.title ?? `Week ${mod.weekNumber} summative test`
+    const summativeDesc =
+      mod.assessment?.description ??
+      `A summative test covering the lessons from week ${mod.weekNumber}: ${mod.title}.`
+    const [assessmentRow] = await db
+      .insert(assessments)
+      .values({
+        courseId: course.id,
+        moduleId: moduleRow.id,
+        userId,
+        type: "test",
+        category: "summative",
+        title: summativeTitle,
+        description: summativeDesc,
+        weekNumber: mod.weekNumber,
+        status: "pending",
+      })
+      .returning()
+    await pushSchedule(summativeTitle, "test", assessmentRow.id, 45)
   }
+
+  // One large capstone project at the end that puts everything into practice.
+  const finalWeek = curriculum.modules.length
+    ? Math.max(...curriculum.modules.map((m) => m.weekNumber))
+    : input.totalWeeks
+  const [finalProject] = await db
+    .insert(assessments)
+    .values({
+      courseId: course.id,
+      moduleId: null,
+      userId,
+      type: "project",
+      category: "final",
+      title: `Final project: ${curriculum.title}`,
+      description:
+        `A comprehensive capstone project that brings together everything from the whole course ` +
+        `("${input.subject}"). It should require the learner to apply the skills and knowledge built across all ${finalWeek} weeks.`,
+      weekNumber: finalWeek,
+      status: "pending",
+    })
+    .returning()
+  await db.insert(scheduleItems).values({
+    courseId: course.id,
+    userId,
+    weekNumber: finalWeek,
+    dayLabel: DAYS[0],
+    orderIndex: 99,
+    title: finalProject.title,
+    itemType: "project",
+    refId: finalProject.id,
+    durationMinutes: 240,
+  })
 
   revalidatePath("/dashboard")
   return course.id
@@ -331,28 +367,145 @@ export async function getCourseDetail(courseId: number) {
   return { course, modules: courseModules, lessons: courseLessons, assessments: courseAssessments, schedule }
 }
 
-// Lazily generate lesson content the first time it is opened.
-export async function getLessonContent(lessonId: number) {
+// Lazily generate lesson content + formative check the first time it is opened.
+export async function getLessonStudy(lessonId: number) {
   const userId = await getUserId()
   const [lesson] = await db
     .select()
     .from(lessons)
     .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
   if (!lesson) throw new Error("Lesson not found")
-  if (lesson.content) return lesson.content
 
-  const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
-  const [mod] = await db.select().from(modules).where(eq(modules.id, lesson.moduleId))
+  let content = lesson.content
+  let formative = lesson.formativeQuestions as FormativeQuestion[] | null
 
-  const content = await generateLessonContent({
-    courseTitle: course?.title ?? "Course",
-    moduleTitle: mod?.title ?? "Module",
-    lessonTitle: lesson.title,
-    objective: lesson.objective ?? lesson.title,
-  })
+  if (!content) {
+    const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
+    const [mod] = await db.select().from(modules).where(eq(modules.id, lesson.moduleId))
+    content = await generateLessonContent({
+      courseTitle: course?.title ?? "Course",
+      moduleTitle: mod?.title ?? "Module",
+      lessonTitle: lesson.title,
+      objective: lesson.objective ?? lesson.title,
+    })
+    await db.update(lessons).set({ content }).where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
+  }
 
-  await db.update(lessons).set({ content }).where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
-  return content
+  if (!formative) {
+    const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
+    try {
+      formative = (await generateFormative({
+        courseTitle: course?.title ?? "Course",
+        lessonTitle: lesson.title,
+        objective: lesson.objective ?? lesson.title,
+        content: content ?? "",
+      })) as FormativeQuestion[]
+    } catch {
+      // Fallback so the lesson is always completable even without AI.
+      formative = [
+        {
+          kind: "open",
+          question: `In a few sentences, summarise the key idea of "${lesson.title}".`,
+          options: null,
+          answerIndex: null,
+          sampleAnswer: lesson.objective ?? "A clear summary of the lesson's main point.",
+          explanation: "A good answer captures the lesson's core objective in your own words.",
+        },
+      ]
+    }
+    await db
+      .update(lessons)
+      .set({ formativeQuestions: formative })
+      .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
+  }
+
+  return {
+    id: lesson.id,
+    title: lesson.title,
+    objective: lesson.objective,
+    content: content ?? "",
+    formativeQuestions: formative,
+    completed: lesson.completed,
+    formativeCompleted: lesson.formativeCompleted,
+    formativeScore: lesson.formativeScore,
+    formativeFeedback: lesson.formativeFeedback,
+  }
+}
+
+// Grade a submitted formative check and mark the lesson complete.
+export async function submitFormative(
+  lessonId: number,
+  responses: { mcqAnswers: Record<number, number>; openAnswers: Record<number, string> },
+) {
+  const userId = await getUserId()
+  const [lesson] = await db
+    .select()
+    .from(lessons)
+    .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
+  if (!lesson) throw new Error("Lesson not found")
+
+  const questions = (lesson.formativeQuestions as FormativeQuestion[]) ?? []
+  let correct = 0
+  let total = 0
+  const notes: string[] = []
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i]
+    total++
+    if (q.kind === "mcq") {
+      const picked = responses.mcqAnswers[i]
+      const isRight = picked === q.answerIndex
+      if (isRight) correct++
+      notes.push(
+        `**Q${i + 1} (multiple choice):** ${isRight ? "Correct." : "Not quite."} ${q.explanation}`,
+      )
+    } else {
+      const answer = responses.openAnswers[i]?.trim() || ""
+      if (!answer) {
+        notes.push(`**Q${i + 1} (written):** No answer provided. ${q.explanation}`)
+        continue
+      }
+      try {
+        const result = await gradeOpenAnswer({
+          question: q.question,
+          sampleAnswer: q.sampleAnswer ?? "",
+          learnerAnswer: answer,
+        })
+        if (result.correct) correct++
+        notes.push(`**Q${i + 1} (written):** ${result.feedback}`)
+      } catch {
+        // Fallback: accept a reasonable-length answer.
+        if (answer.length > 20) correct++
+        notes.push(`**Q${i + 1} (written):** Answer recorded. ${q.explanation}`)
+      }
+    }
+  }
+
+  const score = total > 0 ? Math.round((correct / total) * 100) : 100
+  const feedback = `You scored **${score}%** (${correct}/${total}).\n\n${notes.join("\n\n")}`
+
+  await db
+    .update(lessons)
+    .set({
+      formativeCompleted: true,
+      formativeScore: score,
+      formativeFeedback: feedback,
+      completed: true,
+    })
+    .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
+  // keep the matching schedule item in sync
+  await db
+    .update(scheduleItems)
+    .set({ completed: true })
+    .where(
+      and(
+        eq(scheduleItems.userId, userId),
+        eq(scheduleItems.itemType, "lesson"),
+        eq(scheduleItems.refId, lessonId),
+      ),
+    )
+  revalidatePath("/dashboard")
+  return { score, feedback }
 }
 
 export async function toggleLessonComplete(lessonId: number, completed: boolean) {
@@ -418,7 +571,7 @@ export async function submitTest(assessmentId: number, score: number) {
   const userId = await getUserId()
   await db
     .update(assessments)
-    .set({ status: "graded", score })
+    .set({ status: "graded", score, submittedAt: new Date() })
     .where(and(eq(assessments.id, assessmentId), eq(assessments.userId, userId)))
   await db
     .update(scheduleItems)
@@ -433,7 +586,7 @@ export async function submitTest(assessmentId: number, score: number) {
   revalidatePath("/dashboard")
 }
 
-export async function submitProject(assessmentId: number, submission: string) {
+export async function submitProject(assessmentId: number, submission: string, fileName?: string) {
   const userId = await getUserId()
   const [assessment] = await db
     .select()
@@ -464,7 +617,14 @@ export async function submitProject(assessmentId: number, submission: string) {
 
   await db
     .update(assessments)
-    .set({ status: "graded", submission, score: grade.score, feedback: grade.feedback })
+    .set({
+      status: "graded",
+      submission,
+      fileName: fileName ?? null,
+      score: grade.score,
+      feedback: grade.feedback,
+      submittedAt: new Date(),
+    })
     .where(and(eq(assessments.id, assessmentId), eq(assessments.userId, userId)))
   await db
     .update(scheduleItems)
@@ -477,7 +637,41 @@ export async function submitProject(assessmentId: number, submission: string) {
       ),
     )
   revalidatePath("/dashboard")
+  revalidatePath("/submissions")
   return grade
+}
+
+// Extract text from an uploaded Word document (.docx) for use as a submission.
+export async function extractDocxText(formData: FormData) {
+  await getUserId()
+  const file = formData.get("file")
+  if (!(file instanceof File)) throw new Error("No file provided")
+  const name = file.name || "document.docx"
+  if (!name.toLowerCase().endsWith(".docx")) {
+    throw new Error("Please upload a Word (.docx) file.")
+  }
+  const mammoth = (await import("mammoth")).default
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const { value } = await mammoth.extractRawText({ buffer })
+  return { fileName: name, text: value.trim() }
+}
+
+// All submissions the learner has made, across every course.
+export async function getAllSubmissions() {
+  const userId = await getUserId()
+  const rows = await db
+    .select()
+    .from(assessments)
+    .where(and(eq(assessments.userId, userId), eq(assessments.status, "graded")))
+    .orderBy(desc(assessments.submittedAt))
+
+  const userCourses = await db.select().from(courses).where(eq(courses.userId, userId))
+  const titleById = new Map(userCourses.map((c) => [c.id, c.title]))
+
+  return rows.map((a) => ({
+    ...a,
+    courseTitle: titleById.get(a.courseId) ?? "Course",
+  }))
 }
 
 export async function deleteCourse(courseId: number) {
