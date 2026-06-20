@@ -20,7 +20,7 @@ export function ReviewsList({ reviews }: { reviews: ReviewItem[] }) {
   if (reviews.length === 0) {
     return (
       <p className="rounded-lg border border-dashed bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-        No reviews yet. Be the first to book and review this specialist.
+        No reviews yet. Be the first to book and review this tutor.
       </p>
     )
   }

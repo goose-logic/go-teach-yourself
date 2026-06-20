@@ -35,13 +35,13 @@ export default async function DashboardPage() {
               <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Book a specialist</p>
+              <p className="font-semibold text-foreground">Book a tutor</p>
               <p className="text-sm text-muted-foreground">
                 Get one-on-one help from vetted, real-world experts in your subject.
               </p>
             </div>
           </div>
-          <span className="hidden shrink-0 text-sm font-medium text-primary sm:inline">Browse specialists →</span>
+          <span className="hidden shrink-0 text-sm font-medium text-primary sm:inline">Browse tutors →</span>
         </Link>
 
         {courses.length === 0 ? (

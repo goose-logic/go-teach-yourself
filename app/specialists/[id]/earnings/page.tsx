@@ -56,7 +56,7 @@ export default async function EarningsPage({
           <div>
             <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
               <Wallet className="h-4 w-4" />
-              Specialist earnings
+              Tutor earnings
             </span>
             <h1 className="font-serif text-2xl font-semibold text-foreground md:text-3xl">{s.name}</h1>
           </div>
@@ -182,7 +182,7 @@ export default async function EarningsPage({
         <div className="mt-6 inline-flex items-center gap-2 rounded-lg bg-secondary/50 px-4 py-3 text-xs text-muted-foreground">
           <Badge variant="secondary">Demo</Badge>
           <span>
-            Lifetime totals combine this specialist&apos;s prior sessions with live platform bookings to illustrate the
+            Lifetime totals combine this tutor&apos;s prior sessions with live platform bookings to illustrate the
             earnings and fee model.
           </span>
         </div>

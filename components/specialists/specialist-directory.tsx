@@ -61,7 +61,7 @@ export function SpecialistDirectory({ specialists }: { specialists: DirectorySpe
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by name, topic, or expertise…"
             className="pl-9"
-            aria-label="Search specialists"
+            aria-label="Search tutors"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -84,7 +84,7 @@ export function SpecialistDirectory({ specialists }: { specialists: DirectorySpe
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {filtered.length} specialist{filtered.length === 1 ? "" : "s"}
+        {filtered.length} tutor{filtered.length === 1 ? "" : "s"}
         {area !== "all" ? ` in ${area}` : ""}
       </p>
 
@@ -152,7 +152,7 @@ export function SpecialistDirectory({ specialists }: { specialists: DirectorySpe
       {filtered.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-            <p className="font-medium text-foreground">No specialists match your search</p>
+            <p className="font-medium text-foreground">No tutors match your search</p>
             <p className="text-sm text-muted-foreground">Try a different topic or clear the filters.</p>
           </CardContent>
         </Card>

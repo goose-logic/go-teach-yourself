@@ -96,7 +96,7 @@ export function BookingFlow({
           </div>
           <div className="w-full max-w-sm rounded-xl border bg-secondary/40 p-4 text-left text-sm">
             <div className="flex justify-between py-1">
-              <span className="text-muted-foreground">Specialist</span>
+              <span className="text-muted-foreground">Tutor</span>
               <span className="font-medium text-foreground">{specialistName}</span>
             </div>
             <div className="flex justify-between py-1">

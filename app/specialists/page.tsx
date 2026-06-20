@@ -7,9 +7,9 @@ import { SpecialistDirectory } from "@/components/specialists/specialist-directo
 import { BadgeCheck } from "lucide-react"
 
 export const metadata = {
-  title: "Find a specialist — Curio",
+  title: "Find a tutor — Curio",
   description:
-    "Book one-on-one tutorial sessions with vetted, real-world specialists across cybersecurity, product, marketing, data, design and more.",
+    "Book one-on-one tutorial sessions with vetted, real-world tutors across cybersecurity, product, marketing, data, design and more.",
 }
 
 export default async function SpecialistsPage() {
@@ -25,12 +25,12 @@ export default async function SpecialistsPage() {
         <div className="mb-8 flex flex-col gap-3">
           <span className="inline-flex w-fit items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
             <BadgeCheck className="h-4 w-4" />
-            Vetted specialists
+            Vetted tutors
           </span>
-          <h1 className="font-serif text-3xl font-semibold text-foreground">Book a one-on-one session</h1>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">Book a one-on-one tutorial</h1>
           <p className="max-w-2xl text-pretty text-muted-foreground">
-            Go beyond your AI-built course with live tutoring from people who do this work for a living — not
-            lecturers, but real-world practitioners. Every specialist is vetted before they can list.
+            Go beyond your AI-built course with live tutorials from people who do this work for a living — not
+            lecturers, but real-world practitioners. Every tutor is vetted before they can list.
           </p>
         </div>
 
