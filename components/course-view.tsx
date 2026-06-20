@@ -95,9 +95,9 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
           />
         </TabsContent>
 
-        <TabsContent value="timetable">
-          <TimetableTab schedule={detail.schedule} totalWeeks={course.totalWeeks} />
-        </TabsContent>
+  <TabsContent value="timetable">
+    <TimetableTab schedule={detail.schedule} totalWeeks={course.totalWeeks} assessments={detail.assessments} />
+  </TabsContent>
 
         <TabsContent value="assessments">
           <AssessmentsTab assessments={detail.assessments} schedule={detail.schedule} startDate={course.startDate} />

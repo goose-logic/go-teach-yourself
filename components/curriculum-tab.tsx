@@ -48,29 +48,39 @@ export function CurriculumTab({
                   <LessonItem key={lesson.id} lesson={lesson} onToggle={onLessonToggle} />
                 ))}
 
-                {moduleAssessments.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center gap-3 rounded-lg border border-dashed bg-secondary/40 px-3 py-3"
-                  >
-                    {a.type === "test" ? (
-                      <ClipboardList className="h-4 w-4 shrink-0 text-accent-foreground" />
-                    ) : (
-                      <FolderGit2 className="h-4 w-4 shrink-0 text-accent-foreground" />
-                    )}
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">{a.title}</span>
-                      <span className="text-xs capitalize text-muted-foreground">
-                        {a.type} · see Tests &amp; Projects tab
-                      </span>
+                {moduleAssessments.map((a) => {
+                  const isSummative = a.category === "summative"
+                  return (
+                    <div
+                      key={a.id}
+                      className={`flex items-center gap-3 rounded-lg border px-3 py-3 ${
+                        isSummative
+                          ? "border-primary/50 bg-primary/8"
+                          : "border-dashed border-secondary bg-secondary/40"
+                      }`}
+                    >
+                      {a.type === "test" ? (
+                        <ClipboardList className={`h-4 w-4 shrink-0 ${isSummative ? "text-primary" : "text-accent-foreground"}`} />
+                      ) : (
+                        <FolderGit2 className={`h-4 w-4 shrink-0 ${isSummative ? "text-primary" : "text-accent-foreground"}`} />
+                      )}
+                      <div className="flex flex-col">
+                        <span className={`text-sm ${isSummative ? "font-bold" : "font-medium"} text-foreground`}>
+                          {a.title}
+                          {isSummative && <span className="ml-2 text-xs font-normal text-primary">(Week end)</span>}
+                        </span>
+                        <span className="text-xs capitalize text-muted-foreground">
+                          {a.type} · see Tests &amp; Projects tab
+                        </span>
+                      </div>
+                      {a.status === "graded" && (
+                        <Badge variant="default" className="ml-auto">
+                          {a.score}%
+                        </Badge>
+                      )}
                     </div>
-                    {a.status === "graded" && (
-                      <Badge variant="default" className="ml-auto">
-                        {a.score}%
-                      </Badge>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </AccordionContent>
           </AccordionItem>
