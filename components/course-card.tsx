@@ -50,67 +50,64 @@ export function CourseCard({
   }
 
   return (
-    <Link href={`/course/${id}`} className="group">
-      <Card className="relative h-full transition-shadow group-hover:shadow-md">
-        <CardHeader>
-          <div className="mb-2 flex items-center gap-2">
-            <Badge variant="secondary" className="capitalize">
-              {level}
-            </Badge>
-            <Badge variant="outline">
-              {pace === "full_time" ? "Full time" : "Part time"}
-            </Badge>
-          </div>
-          <CardTitle className="text-balance leading-snug group-hover:text-primary">
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                {completedLessons}/{totalLessons} lessons
-              </span>
-              <span>{progress}%</span>
+    <div className="group relative">
+      <Link href={`/course/${id}`} className="block">
+        <Card className="h-full transition-shadow group-hover:shadow-md">
+          <CardHeader>
+            <div className="mb-2 flex items-center gap-2">
+              <Badge variant="secondary" className="capitalize">
+                {level}
+              </Badge>
+              <Badge variant="outline">
+                {pace === "full_time" ? "Full time" : "Part time"}
+              </Badge>
             </div>
-            <Progress value={progress} />
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" />
-              {totalWeeks} weeks
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {hoursPerWeek}h/week
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <BookOpen className="h-3.5 w-3.5" />
-              {totalLessons} lessons
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-2 self-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Deleting…
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-    </Link>
+            <CardTitle className="text-balance leading-snug group-hover:text-primary">
+              {title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  {completedLessons}/{totalLessons} lessons
+                </span>
+                <span>{progress}%</span>
+              </div>
+              <Progress value={progress} />
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {totalWeeks} weeks
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {hoursPerWeek}h/week
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <BookOpen className="h-3.5 w-3.5" />
+                {totalLessons} lessons
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-2 top-2 h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        onClick={handleDelete}
+        disabled={isDeleting}
+        title="Delete course"
+      >
+        {isDeleting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Trash2 className="h-4 w-4" />
+        )}
+      </Button>
+    </div>
   )
 }
