@@ -216,7 +216,7 @@ export async function seedDemoCourse(key: string) {
       startDate: new Date(),
       status: "active",
       summary: demo.summary,
-      intake: [{ question: "Sample course", answer: "Loaded from Curio demo library" }],
+      intake: [{ question: "Sample course", answer: "Loaded from Go Teach Yourself demo library" }],
     })
     .returning()
 

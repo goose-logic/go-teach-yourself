@@ -7,7 +7,7 @@ import { SpecialistDirectory } from "@/components/specialists/specialist-directo
 import { BadgeCheck } from "lucide-react"
 
 export const metadata = {
-  title: "Find a tutor — Curio",
+  title: "Find a tutor — Go Teach Yourself",
   description:
     "Book one-on-one tutorial sessions with vetted, real-world tutors across cybersecurity, product, marketing, data, design and more.",
 }

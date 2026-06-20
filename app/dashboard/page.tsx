@@ -54,7 +54,7 @@ export default async function DashboardPage() {
                 <div>
                   <p className="text-lg font-medium text-foreground">No courses yet</p>
                   <p className="text-muted-foreground">
-                    Tell Curio what you want to learn and it will build a full course for you.
+                    Tell Go Teach Yourself what you want to learn and it will build a full course for you.
                   </p>
                 </div>
                 <Button asChild size="lg">

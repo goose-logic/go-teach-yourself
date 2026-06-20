@@ -129,7 +129,7 @@ export function IntakeWizard() {
           <CardHeader>
             <CardTitle>What do you want to learn?</CardTitle>
             <CardDescription>
-              Be as specific or broad as you like. Curio will ask a few questions next.
+              Be as specific or broad as you like. Go Teach Yourself will ask a few questions next.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
@@ -177,7 +177,7 @@ export function IntakeWizard() {
           <CardHeader>
             <CardTitle>A few questions</CardTitle>
             <CardDescription>
-              Your answers help Curio tailor the curriculum to you.
+              Your answers help Go Teach Yourself tailor the curriculum to you.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
@@ -338,7 +338,7 @@ export function IntakeWizard() {
             <div>
               <p className="text-lg font-medium text-foreground">Building your course…</p>
               <p className="text-sm text-muted-foreground">
-                Curio is designing your curriculum, timetable, tests, and projects. This can take up to a minute.
+                Go Teach Yourself is designing your curriculum, timetable, tests, and projects. This can take up to a minute.
               </p>
             </div>
           </CardContent>

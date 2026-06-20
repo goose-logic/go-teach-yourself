@@ -20,7 +20,7 @@ export default async function SignInPage() {
         Back
       </Link>
       <Link href="/" className="mb-8 font-serif text-2xl font-semibold text-foreground">
-        Curio
+        Go Teach Yourself
       </Link>
       <Card className="w-full max-w-md">
         <CardHeader>

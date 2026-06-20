@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { CalendarClock } from "lucide-react"
 
 export const metadata = {
-  title: "My sessions — Curio",
+  title: "My sessions — Go Teach Yourself",
 }
 
 export default async function SessionsPage() {

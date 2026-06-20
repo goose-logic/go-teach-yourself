@@ -95,7 +95,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        {isSignUp ? "Already have an account? " : "New to Curio? "}
+        {isSignUp ? "Already have an account? " : "New to Go Teach Yourself? "}
         <Link
           href={isSignUp ? "/sign-in" : "/sign-up"}
           className="font-medium text-primary underline-offset-4 hover:underline"

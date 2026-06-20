@@ -18,7 +18,7 @@ export function AppHeader({ userName, showNew = true }: { userName?: string; sho
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/80 px-6 py-4 backdrop-blur md:px-10">
       <Link href="/dashboard" className="font-serif text-xl font-semibold text-foreground">
-        Curio
+        Go Teach Yourself
       </Link>
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="sm">
