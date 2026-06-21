@@ -56,8 +56,9 @@ export function LessonItem({
         if (s.formativeCompleted && s.formativeScore != null) {
           setResult({ score: s.formativeScore, feedback: s.formativeFeedback ?? "" })
         }
-      } catch {
-        setError("Could not load this lesson. Please try again.")
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : ""
+        setError(msg.includes("frozen") ? msg : "Could not load this lesson. Please try again.")
       } finally {
         setLoading(false)
       }

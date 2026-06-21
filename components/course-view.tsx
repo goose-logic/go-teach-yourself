@@ -130,7 +130,7 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
           ))}
       </div>
 
-      <Tabs defaultValue="curriculum">
+      <Tabs defaultValue={isFrozen ? "assessments" : "curriculum"}>
         <TabsList>
           <TabsTrigger value="curriculum" disabled={isFrozen}>
             Curriculum
