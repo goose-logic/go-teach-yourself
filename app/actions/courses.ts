@@ -19,7 +19,7 @@ import {
 } from "@/lib/ai/generate"
 import type { LessonBlock } from "@/lib/ai/schemas"
 import type { FormativeQuestion } from "@/lib/types"
-import { isOverdue } from "@/lib/deadlines"
+import { isOverdue, hasAnyOutstandingCharges } from "@/lib/deadlines"
 import { getPlatformSettings } from "@/lib/settings"
 import { getDemoCourse } from "@/lib/demo-data"
 
@@ -416,15 +416,18 @@ export async function getCoursesWithProgress() {
     const courseLessons = allLessons.filter((l) => l.courseId === course.id)
     const total = courseLessons.length
     const done = courseLessons.filter((l) => l.completed).length
-    const hasOverdue = allAssessments
-      .filter((a) => a.courseId === course.id)
-      .some((a) => isOverdue(a, course.startDate, course.isPaused))
+    const courseAssessments = allAssessments.filter((a) => a.courseId === course.id)
+    const hasOverdue = courseAssessments.some((a) => isOverdue(a, course.startDate, course.isPaused))
+    // Frozen = there is an overdue assessment whose late fee has not been paid or
+    // waived. A frozen course is locked on the dashboard until the fee is settled.
+    const isFrozen = hasAnyOutstandingCharges(courseAssessments, course.startDate, course.isPaused)
     return {
       ...course,
       totalLessons: total,
       completedLessons: done,
       progress: total > 0 ? Math.round((done / total) * 100) : 0,
       hasOverdue,
+      isFrozen,
     }
   })
 }
