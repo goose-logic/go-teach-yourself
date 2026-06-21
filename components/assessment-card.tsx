@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import type { Assessment, TestQuestion, ProjectBrief } from "@/lib/types"
-import { getAssessmentContent, submitTest, submitProject, extractDocxText } from "@/app/actions/courses"
+import { getAssessmentContent, submitTest, submitProject, saveProjectSubmission, extractDocxText } from "@/app/actions/courses"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -168,6 +168,7 @@ export function AssessmentCard({
 
             {Boolean(data.questions) && !loading && !isTest && (
               <ProjectRunner
+                assessment={data}
                 assessmentId={data.id}
                 brief={data.questions as ProjectBrief}
                 initialSubmission={data.submission}
@@ -326,6 +327,7 @@ function TestRunner({
 }
 
 function ProjectRunner({
+  assessment,
   assessmentId,
   brief,
   initialSubmission,
@@ -333,6 +335,7 @@ function ProjectRunner({
   initialFeedback,
   onGraded,
 }: {
+  assessment: Assessment
   assessmentId: number
   brief: ProjectBrief
   initialSubmission: string | null
@@ -344,6 +347,8 @@ function ProjectRunner({
   const [score, setScore] = useState<number | null>(initialScore)
   const [feedback, setFeedback] = useState<string | null>(initialFeedback)
   const [grading, setGrading] = useState(false)
+  const [savingChoice, setSavingChoice] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -370,11 +375,27 @@ function ProjectRunner({
     }
   }
 
+  // Step 1: save the submission (without grading) and present the review choice:
+  // free AI marking, paid tutor marking, or tutor marking + a tutorial session.
   async function handleSubmit() {
     if (!submission.trim()) {
       setError("Please write or upload your submission before submitting.")
       return
     }
+    setError(null)
+    setSavingChoice(true)
+    try {
+      await saveProjectSubmission(assessmentId, submission, fileName ?? undefined)
+      setShowReviewModal(true)
+    } catch {
+      setError("Could not save your submission. Please try again.")
+    } finally {
+      setSavingChoice(false)
+    }
+  }
+
+  // AI marking path (free): runs the real AI grading and shows score + feedback.
+  async function handleAIReview() {
     setError(null)
     setGrading(true)
     try {
@@ -460,18 +481,41 @@ function ProjectRunner({
         </div>
       )}
 
-      <Button onClick={handleSubmit} disabled={grading} className="self-start">
-        {grading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Reviewing…
-          </>
-        ) : graded ? (
-          "Resubmit for review"
-        ) : (
-          "Submit for review"
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={handleSubmit} disabled={savingChoice || grading} className="self-start">
+          {savingChoice ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : graded ? (
+            "Resubmit for review"
+          ) : (
+            "Submit for review"
+          )}
+        </Button>
+
+        {/* After an AI mark, let the learner still book a tutor to mark it or to
+            mark it and go through the feedback together in a session. */}
+        {graded && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowReviewModal(true)}
+            className="self-start"
+          >
+            Get a tutor to review this
+          </Button>
         )}
-      </Button>
+      </div>
+
+      <ReviewOptionsModal
+        open={showReviewModal}
+        onOpenChange={setShowReviewModal}
+        assessment={assessment}
+        noun="project"
+        onAIReview={handleAIReview}
+      />
     </div>
   )
 }

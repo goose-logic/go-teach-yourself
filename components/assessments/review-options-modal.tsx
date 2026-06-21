@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { Assessment } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Brain, Users, Zap, X } from "lucide-react"
+import { Loader2, Brain, Users, Zap, X, CheckCircle2 } from "lucide-react"
 import { selectAIReview } from "@/app/actions/reviews"
 import { AIReviewSimulator } from "@/components/assessments/ai-review-simulator"
 import { TutorReviewSelector } from "@/components/assessments/tutor-review-selector"
@@ -13,15 +13,43 @@ export function ReviewOptionsModal({
   open,
   onOpenChange,
   assessment,
+  noun = "test",
+  onAIReview,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   assessment: Assessment
+  // What to call the work being reviewed, e.g. "test" or "project".
+  noun?: string
+  // Optional custom AI-review handler. When provided (e.g. for projects), the AI
+  // option runs this real grading instead of the simulated test feedback.
+  onAIReview?: () => Promise<void>
 }) {
   const [step, setStep] = useState<"select" | "ai" | "tutor">("select")
   const [loading, setLoading] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+
+  // Always start on the choice screen each time the modal is opened, so reopening
+  // it (e.g. to add a tutor review after an AI mark) doesn't show a stale step.
+  useEffect(() => {
+    if (open) setStep("select")
+  }, [open])
 
   async function handleSelectAI() {
+    // Project path: run the real AI grading provided by the parent.
+    if (onAIReview) {
+      setStep("ai")
+      setAiLoading(true)
+      try {
+        await onAIReview()
+      } catch (error) {
+        console.error("Failed to run AI review:", error)
+      } finally {
+        setAiLoading(false)
+      }
+      return
+    }
+    // Test path: mark the assessment for AI review and show the simulator.
     try {
       setLoading(true)
       await selectAIReview(assessment.id)
@@ -61,7 +89,7 @@ export function ReviewOptionsModal({
             <>
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold">How would you like your test reviewed?</h2>
+                  <h2 className="text-lg font-semibold">How would you like your {noun} reviewed?</h2>
                   <p className="text-sm text-muted-foreground">
                     Choose between a free AI review or get personalized feedback from an expert tutor
                   </p>
@@ -149,7 +177,38 @@ export function ReviewOptionsModal({
             </>
           )}
 
-          {step === "ai" && (
+          {step === "ai" && onAIReview && (
+            <div>
+              <div className="mb-4">
+                <h3 className="font-semibold">AI Review</h3>
+                <p className="text-sm text-muted-foreground">
+                  Your {noun} is being marked by our AI system
+                </p>
+              </div>
+              {aiLoading ? (
+                <div className="flex flex-col items-center gap-4 py-12">
+                  <div className="rounded-full bg-primary/10 p-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Analyzing your submission…</p>
+                </div>
+              ) : (
+                <div className="space-y-6 py-2">
+                  <div className="flex items-center gap-2 rounded-lg bg-green-50 p-4 dark:bg-green-950/20">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                      Review complete — your score and feedback are shown below.
+                    </p>
+                  </div>
+                  <Button onClick={() => onOpenChange(false)} className="w-full">
+                    Done
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === "ai" && !onAIReview && (
             <AIReviewSimulator
               assessment={assessment}
               onBack={handleBack}
