@@ -17,9 +17,11 @@ import { AlertTriangle, CalendarPlus, CheckCircle2, CreditCard, Loader2, Lock } 
 export function LateFeeFlow({
   assessmentId,
   passesRemaining,
+  lateFeeCents = LATE_FEE_CENTS,
 }: {
   assessmentId: number
   passesRemaining: number
+  lateFeeCents?: number
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<"notice" | "pay">("notice")
@@ -81,7 +83,7 @@ export function LateFeeFlow({
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-semibold text-foreground">Deadline missed</p>
           <p className="text-sm text-muted-foreground">
-            A flat {formatFee(LATE_FEE_CENTS)} late fee applies. Pay it now, or use an extension pass to push
+            A flat {formatFee(lateFeeCents)} late fee applies. Pay it now, or use an extension pass to push
             the deadline back and waive the charge.
           </p>
         </div>
@@ -91,7 +93,7 @@ export function LateFeeFlow({
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="destructive" onClick={() => setMode("pay")}>
             <CreditCard className="h-4 w-4" />
-            Pay {formatFee(LATE_FEE_CENTS)} late fee
+            Pay {formatFee(lateFeeCents)} late fee
           </Button>
           <Button
             size="sm"
@@ -162,7 +164,7 @@ export function LateFeeFlow({
               ) : (
                 <>
                   <Lock className="h-4 w-4" />
-                  Pay {formatFee(LATE_FEE_CENTS)}
+                  Pay {formatFee(lateFeeCents)}
                 </>
               )}
             </Button>

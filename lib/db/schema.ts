@@ -51,6 +51,20 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updatedAt").defaultNow(),
 })
 
+// --- Platform settings (admin-controlled, live pricing) --------------------
+// A single-row table (id = 1) holding the platform-wide fees the admin can edit.
+// The learner-facing app reads these so price changes take effect immediately.
+export const platformSettings = pgTable("platform_settings", {
+  id: integer("id").primaryKey().default(1),
+  // Flat fee to unlock the rest of a course after the free trial units run out.
+  courseUnlockFeeCents: integer("courseUnlockFeeCents").notNull().default(20000),
+  // Flat fee charged when a user misses a deadline.
+  lateFeeCents: integer("lateFeeCents").notNull().default(1000),
+  // Percentage commission the platform takes from specialist tutorial bookings.
+  commissionPercent: integer("commissionPercent").notNull().default(18),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 // --- App tables ------------------------------------------------------------
 
 // A course the user is designing / studying.
@@ -67,6 +81,9 @@ export const courses = pgTable("courses", {
   startDate: timestamp("startDate"),
   status: text("status").notNull().default("generating"), // generating | active | completed
   summary: text("summary"),
+  // Paywall: once the free trial units run out, the learner pays the flat unlock
+  // fee (see platform_settings.courseUnlockFeeCents) to access the rest.
+  unlockPaid: boolean("unlockPaid").notNull().default(false),
   // Raw answers to the AI clarifying questions, kept for context / regeneration.
   intake: jsonb("intake"),
   // --- Deadline accountability ---------------------------------------------
