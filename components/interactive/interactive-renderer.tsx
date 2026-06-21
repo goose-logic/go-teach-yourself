@@ -25,18 +25,38 @@ export interface InteractiveElement {
 
 export function InteractiveRenderer({
   element,
+  elements,
   onComplete,
   className,
 }: {
-  element: InteractiveElement
+  element?: InteractiveElement
+  elements?: InteractiveElement[]
   onComplete?: (result: any) => void
   className?: string
 }) {
-  return (
-    <Suspense fallback={<InteractiveLoadingPlaceholder />}>
-      <InteractiveContent element={element} onComplete={onComplete} className={className} />
-    </Suspense>
-  )
+  // If array is provided, render all elements
+  if (elements && Array.isArray(elements)) {
+    return (
+      <div className="flex flex-col gap-6">
+        {elements.map((el) => (
+          <Suspense key={el.id} fallback={<InteractiveLoadingPlaceholder />}>
+            <InteractiveContent element={el} onComplete={onComplete} className={className} />
+          </Suspense>
+        ))}
+      </div>
+    )
+  }
+
+  // Otherwise render single element
+  if (element) {
+    return (
+      <Suspense fallback={<InteractiveLoadingPlaceholder />}>
+        <InteractiveContent element={element} onComplete={onComplete} className={className} />
+      </Suspense>
+    )
+  }
+
+  return null
 }
 
 function InteractiveContent({

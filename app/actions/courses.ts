@@ -525,6 +525,9 @@ export async function getLessonStudy(lessonId: number) {
     formativeCompleted: lesson.formativeCompleted,
     formativeScore: lesson.formativeScore,
     formativeFeedback: lesson.formativeFeedback,
+    imageUrl: lesson.imageUrl,
+    imageCaption: lesson.imageCaption,
+    interactiveElements: lesson.interactiveElements,
   }
 }
 

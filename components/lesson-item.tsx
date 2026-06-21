@@ -4,6 +4,7 @@ import { useState } from "react"
 import type { Lesson, FormativeQuestion } from "@/lib/types"
 import { getLessonStudy, submitFormative, toggleLessonComplete } from "@/app/actions/courses"
 import { Markdown } from "@/components/markdown"
+import { InteractiveRenderer } from "@/components/interactive/interactive-renderer"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Check, ChevronDown, Clock, Loader2, ClipboardCheck } from "lucide-react"
@@ -15,6 +16,9 @@ type Study = {
   formativeCompleted: boolean
   formativeScore: number | null
   formativeFeedback: string | null
+  imageUrl: string | null
+  imageCaption: string | null
+  interactiveElements: unknown
 }
 
 export function LessonItem({
@@ -49,6 +53,9 @@ export function LessonItem({
           formativeCompleted: s.formativeCompleted,
           formativeScore: s.formativeScore,
           formativeFeedback: s.formativeFeedback,
+          imageUrl: s.imageUrl,
+          imageCaption: s.imageCaption,
+          interactiveElements: s.interactiveElements,
         })
         if (s.formativeCompleted && s.formativeScore != null) {
           setResult({ score: s.formativeScore, feedback: s.formativeFeedback ?? "" })
@@ -131,7 +138,20 @@ export function LessonItem({
 
           {study && !loading && (
             <div className="flex flex-col gap-5">
-              <Markdown>{study.content}</Markdown>
+              {/* Lesson image */}
+              {study.imageUrl && (
+                <figure className="flex flex-col gap-2">
+                  <img src={study.imageUrl} alt={study.imageCaption || "Lesson image"} className="w-full rounded-lg border object-cover" />
+                  {study.imageCaption && <figcaption className="text-sm text-muted-foreground">{study.imageCaption as string}</figcaption>}
+                </figure>
+              )}
+
+              <Markdown>{study.content as string}</Markdown>
+
+              {/* Interactive elements */}
+              {study.interactiveElements && Array.isArray(study.interactiveElements) && study.interactiveElements.length > 0 && (
+                <InteractiveRenderer elements={study.interactiveElements as any} />
+              )}
 
               {/* Formative check */}
               <div className="rounded-lg border bg-secondary/40 p-4">
