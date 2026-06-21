@@ -864,6 +864,38 @@ export async function submitProject(assessmentId: number, submission: string, fi
   return grade
 }
 
+// Persist a project submission WITHOUT grading it. Used when the learner chooses
+// a tutor review path (tutor marking, or tutor + session) so their work is saved
+// while it awaits a human review, rather than being auto-graded by AI.
+export async function saveProjectSubmission(
+  assessmentId: number,
+  submission: string,
+  fileName?: string,
+) {
+  const userId = await getUserId()
+  await db
+    .update(assessments)
+    .set({
+      status: "submitted",
+      submission,
+      fileName: fileName ?? null,
+      submittedAt: new Date(),
+    })
+    .where(and(eq(assessments.id, assessmentId), eq(assessments.userId, userId)))
+  await db
+    .update(scheduleItems)
+    .set({ completed: true })
+    .where(
+      and(
+        eq(scheduleItems.userId, userId),
+        eq(scheduleItems.itemType, "project"),
+        eq(scheduleItems.refId, assessmentId),
+      ),
+    )
+  revalidatePath("/dashboard")
+  revalidatePath("/submissions")
+}
+
 // Extract text from an uploaded Word document (.docx) for use as a submission.
 export async function extractDocxText(formData: FormData) {
   await getUserId()

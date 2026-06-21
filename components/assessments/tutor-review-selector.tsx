@@ -29,10 +29,13 @@ export function TutorReviewSelector({
   assessment,
   onBack,
   onClose,
+  noun = "test",
 }: {
   assessment: Assessment
   onBack: () => void
   onClose: () => void
+  // What to call the work being reviewed, e.g. "test" or "project".
+  noun?: string
 }) {
   const [step, setStep] = useState<"type" | "tier" | "tutor" | "payment">("type")
   const [reviewType, setReviewType] = useState<ReviewType>("tutor_marking")
@@ -90,7 +93,7 @@ export function TutorReviewSelector({
               />
               <div className="flex-1">
                 <p className="font-medium">Tutor Marking Only</p>
-                <p className="mt-1 text-sm text-muted-foreground">Get detailed written feedback on your test. Perfect for focused review of your performance.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Get detailed written feedback on your {noun}. Perfect for focused review of your performance.</p>
               </div>
             </label>
 
