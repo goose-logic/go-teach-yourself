@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { Lesson, FormativeQuestion } from "@/lib/types"
 import { getLessonStudy, submitFormative, toggleLessonComplete } from "@/app/actions/courses"
 import { Markdown } from "@/components/markdown"
-import { InteractiveRenderer, type InteractiveElement } from "@/components/interactive/interactive-renderer"
+import { LessonBlocks, type LessonBlock } from "@/components/interactive/lesson-blocks"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Check, ChevronDown, Clock, Loader2, ClipboardCheck } from "lucide-react"
@@ -16,9 +16,7 @@ type Study = {
   formativeCompleted: boolean
   formativeScore: number | null
   formativeFeedback: string | null
-  imageUrl: string | null
-  imageCaption: string | null
-  interactiveElements: InteractiveElement[] | null
+  contentBlocks: LessonBlock[]
 }
 
 export function LessonItem({
@@ -53,9 +51,7 @@ export function LessonItem({
           formativeCompleted: s.formativeCompleted,
           formativeScore: s.formativeScore,
           formativeFeedback: s.formativeFeedback,
-          imageUrl: s.imageUrl,
-          imageCaption: s.imageCaption,
-          interactiveElements: (s.interactiveElements as InteractiveElement[] | null) ?? null,
+          contentBlocks: (s.contentBlocks as LessonBlock[] | null) ?? [],
         })
         if (s.formativeCompleted && s.formativeScore != null) {
           setResult({ score: s.formativeScore, feedback: s.formativeFeedback ?? "" })
@@ -138,20 +134,8 @@ export function LessonItem({
 
           {study && !loading && (
             <div className="flex flex-col gap-5">
-              {/* Lesson image */}
-              {study.imageUrl && (
-                <figure className="flex flex-col gap-2">
-                  <img src={study.imageUrl} alt={study.imageCaption || "Lesson image"} className="w-full rounded-lg border object-cover" />
-                  {study.imageCaption && <figcaption className="text-sm text-muted-foreground">{study.imageCaption}</figcaption>}
-                </figure>
-              )}
-
-              <Markdown>{study.content}</Markdown>
-
-              {/* Interactive elements */}
-              {Array.isArray(study.interactiveElements) && study.interactiveElements.length > 0 && (
-                <InteractiveRenderer elements={study.interactiveElements as InteractiveElement[]} />
-              )}
+              {/* Interleaved lesson: prose, concept visuals and exercises woven together */}
+              <LessonBlocks blocks={study.contentBlocks} />
 
               {/* Formative check */}
               <div className="rounded-lg border bg-secondary/40 p-4">

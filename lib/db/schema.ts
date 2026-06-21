@@ -107,6 +107,8 @@ export const lessons = pgTable("lessons", {
   formativeCompleted: boolean("formativeCompleted").notNull().default(false),
   formativeScore: integer("formativeScore"),
   formativeFeedback: text("formativeFeedback"),
+  // Ordered, interleaved lesson content: array of blocks (prose, visual, exercise)
+  contentBlocks: jsonb("contentBlocks"),
   // Visual content
   imageUrl: text("imageUrl"), // supplementary lesson image
   imageCaption: text("imageCaption"), // caption for the image

@@ -10,13 +10,14 @@ import {
   generateQuestions,
   generateCurriculum,
   generateLessonContent,
+  generateLessonBlocks,
   generateFormative,
-  generateInteractiveElements,
   gradeOpenAnswer,
   generateTest,
   generateProject,
   gradeSubmission,
 } from "@/lib/ai/generate"
+import type { LessonBlock } from "@/lib/ai/schemas"
 import type { FormativeQuestion } from "@/lib/types"
 import { isOverdue } from "@/lib/deadlines"
 import { getDemoCourse } from "@/lib/demo-data"
@@ -475,17 +476,52 @@ export async function getLessonStudy(lessonId: number) {
 
   let content = lesson.content
   let formative = lesson.formativeQuestions as FormativeQuestion[] | null
-  let interactive = lesson.interactiveElements as unknown[] | null
+  let blocks = lesson.contentBlocks as LessonBlock[] | null
 
-  if (!content) {
+  // Generate the full INTERLEAVED lesson (prose + visuals + exercises woven
+  // together) the first time the lesson is opened, so concepts are taught and
+  // immediately demonstrated/checked rather than read passively.
+  if (!blocks || (Array.isArray(blocks) && blocks.length === 0)) {
     const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
     const [mod] = await db.select().from(modules).where(eq(modules.id, lesson.moduleId))
-    content = await generateLessonContent({
-      courseTitle: course?.title ?? "Course",
-      moduleTitle: mod?.title ?? "Module",
-      lessonTitle: lesson.title,
-      objective: lesson.objective ?? lesson.title,
-    })
+    try {
+      blocks = await generateLessonBlocks({
+        courseTitle: course?.title ?? "Course",
+        moduleTitle: mod?.title ?? "Module",
+        lessonTitle: lesson.title,
+        objective: lesson.objective ?? lesson.title,
+      })
+    } catch {
+      blocks = null
+    }
+    if (blocks && blocks.length > 0) {
+      await db
+        .update(lessons)
+        .set({ contentBlocks: blocks })
+        .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
+    }
+  }
+
+  // Derive plain markdown content from the prose blocks (used for the formative
+  // check and as a fallback if block generation ever fails).
+  if (!content) {
+    const proseFromBlocks =
+      blocks
+        ?.filter((b): b is Extract<LessonBlock, { kind: "prose" }> => b.kind === "prose")
+        .map((b) => b.markdown)
+        .join("\n\n") ?? ""
+    if (proseFromBlocks) {
+      content = proseFromBlocks
+    } else {
+      const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
+      const [mod] = await db.select().from(modules).where(eq(modules.id, lesson.moduleId))
+      content = await generateLessonContent({
+        courseTitle: course?.title ?? "Course",
+        moduleTitle: mod?.title ?? "Module",
+        lessonTitle: lesson.title,
+        objective: lesson.objective ?? lesson.title,
+      })
+    }
     await db.update(lessons).set({ content }).where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
   }
 
@@ -517,21 +553,14 @@ export async function getLessonStudy(lessonId: number) {
       .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
   }
 
-  // Generate interactive elements the first time the lesson is opened so every
-  // unit always has something the learner actively does (not just reads).
-  if (!interactive || (Array.isArray(interactive) && interactive.length === 0)) {
-    const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
-    try {
-      interactive = await generateInteractiveElements({
-        courseTitle: course?.title ?? "Course",
-        lessonTitle: lesson.title,
-        objective: lesson.objective ?? lesson.title,
-        content: content ?? "",
-      })
-    } catch {
-      // Fallback: a minimal listening exercise so the lesson is never purely passive.
-      interactive = [
-        {
+  // Fallback: if block generation failed, build a minimal interleaved lesson from
+  // the markdown content plus one listening exercise so it is never purely passive.
+  if (!blocks || blocks.length === 0) {
+    blocks = [
+      { kind: "prose", markdown: content ?? lesson.title },
+      {
+        kind: "exercise",
+        element: {
           id: "el-0",
           type: "audio",
           title: "Listen & check",
@@ -555,11 +584,11 @@ export async function getLessonStudy(lessonId: number) {
             ],
           },
         },
-      ]
-    }
+      },
+    ]
     await db
       .update(lessons)
-      .set({ interactiveElements: interactive })
+      .set({ contentBlocks: blocks })
       .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
   }
 
@@ -575,7 +604,7 @@ export async function getLessonStudy(lessonId: number) {
     formativeFeedback: lesson.formativeFeedback,
     imageUrl: lesson.imageUrl,
     imageCaption: lesson.imageCaption,
-    interactiveElements: interactive,
+    contentBlocks: blocks,
   }
 }
 
