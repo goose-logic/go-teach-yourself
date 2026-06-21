@@ -18,10 +18,12 @@ export function AssessmentsTab({
   assessments,
   schedule,
   course,
+  lateFeeCents = LATE_FEE_CENTS,
 }: {
   assessments: Assessment[]
   schedule: ScheduleItem[]
   course: Course
+  lateFeeCents?: number
 }) {
   if (assessments.length === 0) {
     return (
@@ -63,7 +65,7 @@ export function AssessmentsTab({
         isPaused={isPaused}
         freePauseAvailable={freePauseAvailable(course)}
         pausedUntil={course.pausedUntil}
-        outstandingCents={outstandingCount * LATE_FEE_CENTS}
+        outstandingCents={outstandingCount * lateFeeCents}
       />
 
       {sorted.map((a) => (
@@ -76,6 +78,7 @@ export function AssessmentsTab({
           outstandingCharge={hasOutstandingCharge(a, startDate, isPaused)}
           chargeSettled={isOverdue(a, startDate, isPaused) && (a.lateChargePaid || a.lateChargeWaived)}
           passesRemaining={passesRemaining}
+          lateFeeCents={lateFeeCents}
         />
       ))}
     </div>

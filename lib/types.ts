@@ -35,4 +35,7 @@ export type CourseDetail = {
   lessons: Lesson[]
   assessments: Assessment[]
   schedule: ScheduleItem[]
+  // Live, admin-controlled pricing (in cents).
+  lateFeeCents: number
+  courseUnlockFeeCents: number
 }

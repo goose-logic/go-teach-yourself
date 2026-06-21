@@ -20,6 +20,7 @@ import {
 import type { LessonBlock } from "@/lib/ai/schemas"
 import type { FormativeQuestion } from "@/lib/types"
 import { isOverdue } from "@/lib/deadlines"
+import { getPlatformSettings } from "@/lib/settings"
 import { getDemoCourse } from "@/lib/demo-data"
 
 async function getUserId() {
@@ -462,7 +463,18 @@ export async function getCourseDetail(courseId: number) {
     .where(and(eq(scheduleItems.courseId, courseId), eq(scheduleItems.userId, userId)))
     .orderBy(asc(scheduleItems.weekNumber), asc(scheduleItems.orderIndex))
 
-  return { course, modules: courseModules, lessons: courseLessons, assessments: courseAssessments, schedule }
+  // Live, admin-controlled pricing so fee changes take effect immediately.
+  const { lateFeeCents, courseUnlockFeeCents } = await getPlatformSettings()
+
+  return {
+    course,
+    modules: courseModules,
+    lessons: courseLessons,
+    assessments: courseAssessments,
+    schedule,
+    lateFeeCents,
+    courseUnlockFeeCents,
+  }
 }
 
 // Lazily generate lesson content + formative check the first time it is opened.

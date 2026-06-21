@@ -138,7 +138,7 @@ export function AssessmentCard({
         {data.description && <CardDescription className="pt-2">{data.description}</CardDescription>}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {outstandingCharge && <LateFeeFlow assessmentId={data.id} passesRemaining={passesRemaining} />}
+        {outstandingCharge && <LateFeeFlow assessmentId={data.id} passesRemaining={passesRemaining} lateFeeCents={lateFeeCents} />}
         {chargeSettled && <LateFeePaid />}
 
         {!open && (

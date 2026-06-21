@@ -156,12 +156,12 @@ function SignupChart({ data }: { data: { month: string; count: number }[] }) {
   const max = Math.max(...data.map((d) => d.count), 1)
 
   return (
-    <div className="flex h-56 items-end gap-2" role="img" aria-label="Bar chart of monthly sign-ups">
+    <div className="flex h-56 items-stretch gap-2" role="img" aria-label="Bar chart of monthly sign-ups">
       {data.map((d) => {
         const heightPct = Math.max(4, Math.round((d.count / max) * 100))
         return (
-          <div key={d.month} className="group flex flex-1 flex-col items-center gap-2">
-            <div className="flex w-full flex-1 items-end">
+          <div key={d.month} className="group flex h-full flex-1 flex-col items-center gap-2">
+            <div className="flex h-full w-full items-end">
               <div
                 className="relative w-full rounded-t-md bg-primary/80 transition-colors hover:bg-primary"
                 style={{ height: `${heightPct}%` }}
