@@ -22,10 +22,15 @@ export function verifyAdminPassword(password: string): boolean {
 
 export async function startAdminSession() {
   const store = await cookies()
+  // The v0 / Vercel preview runs the app inside a cross-site iframe, so the
+  // session cookie must be SameSite=None + Secure to be sent back on subsequent
+  // requests. (A SameSite=Lax cookie gets set but never returned in that context,
+  // which bounces the user straight back to the login page.) This mirrors how
+  // the learner-facing Better Auth cookies are configured.
   store.set(COOKIE_NAME, sessionToken(), {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV !== "development",
+    sameSite: "none",
+    secure: true,
     path: "/",
     maxAge: COOKIE_MAX_AGE,
   })
