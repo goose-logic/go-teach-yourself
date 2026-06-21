@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   Compass,
   GraduationCap,
+  Lock,
   MessagesSquare,
   Sparkles,
   Star,
@@ -256,8 +257,14 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t px-6 py-8 text-center text-sm text-muted-foreground md:px-10">
-        Go Teach Yourself — design your own course, learn anything.
+      <footer className="flex flex-col items-center gap-3 border-t px-6 py-8 text-center text-sm text-muted-foreground md:px-10">
+        <span>Go Teach Yourself — design your own course, learn anything.</span>
+        <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+          <Link href="/admin/login">
+            <Lock className="h-3.5 w-3.5" />
+            Admin login
+          </Link>
+        </Button>
       </footer>
     </div>
   )
