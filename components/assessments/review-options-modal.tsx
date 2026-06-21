@@ -221,6 +221,7 @@ export function ReviewOptionsModal({
               assessment={assessment}
               onBack={handleBack}
               onClose={() => onOpenChange(false)}
+              noun={noun}
             />
           )}
         </div>
