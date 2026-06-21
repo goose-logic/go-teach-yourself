@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Markdown } from "@/components/markdown"
+import { LateFeeFlow, LateFeePaid } from "@/components/accountability/late-fee-flow"
 import { cn } from "@/lib/utils"
-import { CalendarClock, Check, ClipboardList, Clock, FileUp, FolderGit2, Loader2, Trophy, X } from "lucide-react"
+import { CalendarClock, Check, CheckCircle2, ClipboardList, Clock, FileUp, FolderGit2, Loader2, Trophy, X } from "lucide-react"
 
 function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes} min`
@@ -26,10 +27,16 @@ export function AssessmentCard({
   assessment,
   estimatedMinutes,
   dueDate,
+  overdue = false,
+  outstandingCharge = false,
+  passesRemaining = 0,
 }: {
   assessment: Assessment
   estimatedMinutes?: number
   dueDate?: Date | null
+  overdue?: boolean
+  outstandingCharge?: boolean
+  passesRemaining?: number
 }) {
   const [data, setData] = useState<Assessment>(assessment)
   const [open, setOpen] = useState(false)
@@ -39,6 +46,9 @@ export function AssessmentCard({
   const isTest = data.type === "test"
   const isGraded = data.status === "graded"
   const isFinal = data.category === "final"
+  // A settled late charge (paid for, or waived by an extension) on an item that
+  // was overdue — used to show a reassuring "caught up" confirmation.
+  const chargeSettled = overdue && (data.lateChargePaid || data.lateChargeWaived)
 
   async function handleOpen() {
     const next = !open
@@ -58,7 +68,7 @@ export function AssessmentCard({
   }
 
   return (
-    <Card>
+    <Card className={cn(overdue && !chargeSettled && "border-destructive ring-1 ring-destructive")}>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
@@ -82,7 +92,7 @@ export function AssessmentCard({
                 )}
               </div>
               <CardTitle className="text-lg leading-snug">{data.title}</CardTitle>
-              {(estimatedMinutes || dueDate) && (
+              {(estimatedMinutes || dueDate || data.submittedAt) && (
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   {estimatedMinutes ? (
                     <span className="inline-flex items-center gap-1.5">
@@ -91,24 +101,43 @@ export function AssessmentCard({
                     </span>
                   ) : null}
                   {dueDate ? (
-                    <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5",
+                        overdue && !chargeSettled && "font-medium text-destructive",
+                      )}
+                    >
                       <CalendarClock className="h-3.5 w-3.5" />
-                      Due {formatDueDate(dueDate)}
+                      {overdue && !chargeSettled ? "Was due" : "Due"} {formatDueDate(dueDate)}
+                    </span>
+                  ) : null}
+                  {data.submittedAt ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Submitted {formatDueDate(new Date(data.submittedAt))}
                     </span>
                   ) : null}
                 </div>
               )}
             </div>
           </div>
-          {isGraded && (
-            <Badge className="shrink-0 text-sm">{data.score}%</Badge>
-          )}
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            {isGraded && <Badge className="text-sm">{data.score}%</Badge>}
+            {overdue && !chargeSettled && (
+              <Badge variant="destructive" className="text-xs">
+                Overdue
+              </Badge>
+            )}
+          </div>
         </div>
         {data.description && <CardDescription className="pt-2">{data.description}</CardDescription>}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
+        {outstandingCharge && <LateFeeFlow assessmentId={data.id} passesRemaining={passesRemaining} />}
+        {chargeSettled && <LateFeePaid />}
+
         {!open && (
-          <Button variant={isGraded ? "outline" : "default"} onClick={handleOpen}>
+          <Button variant={isGraded ? "outline" : "default"} className="self-start" onClick={handleOpen}>
             {isGraded ? "Review" : isTest ? "Start test" : "View project"}
           </Button>
         )}

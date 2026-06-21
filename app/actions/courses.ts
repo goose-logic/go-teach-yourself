@@ -17,6 +17,7 @@ import {
   gradeSubmission,
 } from "@/lib/ai/generate"
 import type { FormativeQuestion } from "@/lib/types"
+import { isOverdue } from "@/lib/deadlines"
 import { getDemoCourse } from "@/lib/demo-data"
 
 async function getUserId() {
@@ -403,18 +404,29 @@ export async function getCoursesWithProgress() {
     .from(lessons)
     .where(eq(lessons.userId, userId))
 
+  const allAssessments = await db
+    .select()
+    .from(assessments)
+    .where(eq(assessments.userId, userId))
+
   return list.map((course) => {
     const courseLessons = allLessons.filter((l) => l.courseId === course.id)
     const total = courseLessons.length
     const done = courseLessons.filter((l) => l.completed).length
+    const hasOverdue = allAssessments
+      .filter((a) => a.courseId === course.id)
+      .some((a) => isOverdue(a, course.startDate, course.isPaused))
     return {
       ...course,
       totalLessons: total,
       completedLessons: done,
       progress: total > 0 ? Math.round((done / total) * 100) : 0,
+      hasOverdue,
     }
   })
 }
+
+export type CourseWithProgress = Awaited<ReturnType<typeof getCoursesWithProgress>>[number]
 
 export async function getCourseDetail(courseId: number) {
   const userId = await getUserId()

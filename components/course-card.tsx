@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { CalendarDays, Clock, BookOpen, Trash2, Loader2 } from "lucide-react"
+import { CalendarDays, Clock, BookOpen, Trash2, Loader2, AlertTriangle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function CourseCard({
   id,
@@ -20,6 +21,7 @@ export function CourseCard({
   progress,
   totalWeeks,
   hoursPerWeek,
+  hasOverdue = false,
 }: {
   id: number
   title: string
@@ -31,6 +33,7 @@ export function CourseCard({
   progress: number
   totalWeeks: number | null | undefined
   hoursPerWeek: number | null | undefined
+  hasOverdue?: boolean
 }) {
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -52,7 +55,12 @@ export function CourseCard({
   return (
     <div className="group relative">
       <Link href={`/course/${id}`} className="block">
-        <Card className="h-full transition-shadow group-hover:shadow-md">
+        <Card
+          className={cn(
+            "h-full transition-shadow group-hover:shadow-md",
+            hasOverdue && "border-destructive ring-1 ring-destructive",
+          )}
+        >
           <CardHeader>
             <div className="mb-2 flex items-center gap-2">
               <Badge variant="secondary" className="capitalize">
@@ -61,6 +69,12 @@ export function CourseCard({
               <Badge variant="outline">
                 {pace === "full_time" ? "Full time" : "Part time"}
               </Badge>
+              {hasOverdue && (
+                <Badge variant="destructive" className="ml-auto gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Overdue
+                </Badge>
+              )}
             </div>
             <CardTitle className="text-balance leading-snug group-hover:text-primary">
               {title}

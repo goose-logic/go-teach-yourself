@@ -69,6 +69,12 @@ export const courses = pgTable("courses", {
   summary: text("summary"),
   // Raw answers to the AI clarifying questions, kept for context / regeneration.
   intake: jsonb("intake"),
+  // --- Deadline accountability ---------------------------------------------
+  isPaused: boolean("isPaused").notNull().default(false),
+  pausedUntil: timestamp("pausedUntil"),
+  pausesUsed: integer("pausesUsed").notNull().default(0),
+  extensionPassesUsed: integer("extensionPassesUsed").notNull().default(0),
+  pauseReason: text("pauseReason"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -125,6 +131,11 @@ export const assessments = pgTable("assessments", {
   score: integer("score"), // 0-100
   feedback: text("feedback"),
   submittedAt: timestamp("submittedAt"),
+  // --- Deadline accountability ---------------------------------------------
+  deadline: timestamp("deadline"), // optional explicit override; otherwise derived from course.startDate + week
+  extensionDays: integer("extensionDays").notNull().default(0), // days added via extension passes
+  lateChargePaid: boolean("lateChargePaid").notNull().default(false),
+  lateChargeWaived: boolean("lateChargeWaived").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
