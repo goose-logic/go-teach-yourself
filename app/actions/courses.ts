@@ -481,6 +481,26 @@ export async function getCourseDetail(courseId: number) {
 }
 
 // Lazily generate lesson content + formative check the first time it is opened.
+/**
+ * Authoritative server-side freeze guard. If the course has any unpaid late
+ * fee, all lesson access and progress mutations are blocked here — the client
+ * UI gating is only cosmetic and can be bypassed, so this is the real gate.
+ */
+async function assertCourseNotFrozen(courseId: number, userId: string) {
+  const [course] = await db
+    .select()
+    .from(courses)
+    .where(and(eq(courses.id, courseId), eq(courses.userId, userId)))
+  if (!course) return
+  const courseAssessments = await db
+    .select()
+    .from(assessments)
+    .where(and(eq(assessments.courseId, courseId), eq(assessments.userId, userId)))
+  if (hasAnyOutstandingCharges(courseAssessments, course.startDate, course.isPaused)) {
+    throw new Error("Course access is frozen. Pay your outstanding late fee to unlock lessons.")
+  }
+}
+
 export async function getLessonStudy(lessonId: number) {
   const userId = await getUserId()
   const [lesson] = await db
@@ -488,6 +508,8 @@ export async function getLessonStudy(lessonId: number) {
     .from(lessons)
     .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
   if (!lesson) throw new Error("Lesson not found")
+
+  await assertCourseNotFrozen(lesson.courseId, userId)
 
   let content = lesson.content
   let formative = lesson.formativeQuestions as FormativeQuestion[] | null
@@ -635,6 +657,8 @@ export async function submitFormative(
     .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
   if (!lesson) throw new Error("Lesson not found")
 
+  await assertCourseNotFrozen(lesson.courseId, userId)
+
   const questions = (lesson.formativeQuestions as FormativeQuestion[]) ?? []
   let correct = 0
   let total = 0
@@ -701,6 +725,14 @@ export async function submitFormative(
 
 export async function toggleLessonComplete(lessonId: number, completed: boolean) {
   const userId = await getUserId()
+  // Block advancing progress on a frozen course (un-completing stays allowed).
+  if (completed) {
+    const [lesson] = await db
+      .select()
+      .from(lessons)
+      .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
+    if (lesson) await assertCourseNotFrozen(lesson.courseId, userId)
+  }
   await db
     .update(lessons)
     .set({ completed })
