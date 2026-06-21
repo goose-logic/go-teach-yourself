@@ -4,6 +4,7 @@ import { useState } from "react"
 import type { Lesson, FormativeQuestion } from "@/lib/types"
 import { getLessonStudy, submitFormative, toggleLessonComplete } from "@/app/actions/courses"
 import { Markdown } from "@/components/markdown"
+import { LessonBlocks, type LessonBlock } from "@/components/interactive/lesson-blocks"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Check, ChevronDown, Clock, Loader2, ClipboardCheck } from "lucide-react"
@@ -15,6 +16,7 @@ type Study = {
   formativeCompleted: boolean
   formativeScore: number | null
   formativeFeedback: string | null
+  contentBlocks: LessonBlock[]
 }
 
 export function LessonItem({
@@ -49,6 +51,7 @@ export function LessonItem({
           formativeCompleted: s.formativeCompleted,
           formativeScore: s.formativeScore,
           formativeFeedback: s.formativeFeedback,
+          contentBlocks: (s.contentBlocks as LessonBlock[] | null) ?? [],
         })
         if (s.formativeCompleted && s.formativeScore != null) {
           setResult({ score: s.formativeScore, feedback: s.formativeFeedback ?? "" })
@@ -131,7 +134,8 @@ export function LessonItem({
 
           {study && !loading && (
             <div className="flex flex-col gap-5">
-              <Markdown>{study.content}</Markdown>
+              {/* Interleaved lesson: prose, concept visuals and exercises woven together */}
+              <LessonBlocks blocks={study.contentBlocks} />
 
               {/* Formative check */}
               <div className="rounded-lg border bg-secondary/40 p-4">

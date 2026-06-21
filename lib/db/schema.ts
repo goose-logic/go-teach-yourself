@@ -107,6 +107,15 @@ export const lessons = pgTable("lessons", {
   formativeCompleted: boolean("formativeCompleted").notNull().default(false),
   formativeScore: integer("formativeScore"),
   formativeFeedback: text("formativeFeedback"),
+  // Ordered, interleaved lesson content: array of blocks (prose, visual, exercise)
+  contentBlocks: jsonb("contentBlocks"),
+  // Visual content
+  imageUrl: text("imageUrl"), // supplementary lesson image
+  imageCaption: text("imageCaption"), // caption for the image
+  // Interactive elements: array of { type: "audio" | "quiz" | "dragdrop" | "scenario" | "diagram" | "fillblank" | "video", config: {...} }
+  interactiveElements: jsonb("interactiveElements"),
+  // User progress on interactive elements: { elementIndex: score or completion status }
+  interactiveProgress: jsonb("interactiveProgress"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

@@ -103,6 +103,234 @@ export const openGradeSchema = z.object({
   feedback: z.string().describe("one or two short sentences of feedback"),
 })
 
+// --- Interactive in-lesson elements -----------------------------------------
+// The AI fills only the block that matches `type`; the rest stay null.
+const interactiveMcqItem = z.object({
+  question: z.string(),
+  options: z.array(z.string()).min(2).max(4),
+  correctIndex: z.number().int().min(0).describe("index of the correct option"),
+  explanation: z.string().describe("why the answer is correct"),
+})
+
+export const interactiveElementsSchema = z.object({
+  elements: z
+    .array(
+      z.object({
+        type: z
+          .enum(["quiz", "dragdrop", "scenario", "audio"])
+          .describe("which kind of interactive exercise this is"),
+        title: z.string().describe("short title for the exercise"),
+        description: z.string().nullable().describe("one-line intro, or null"),
+
+        // type === "quiz": 2-4 quick check questions
+        quiz: z
+          .object({ questions: z.array(interactiveMcqItem).min(2).max(4) })
+          .nullable()
+          .describe("fill ONLY when type is 'quiz', else null"),
+
+        // type === "dragdrop": ordering exercise. List items in the CORRECT order.
+        dragdrop: z
+          .object({
+            instruction: z.string().describe("e.g. 'Arrange these events in chronological order'"),
+            orderedItems: z
+              .array(z.string())
+              .min(3)
+              .max(6)
+              .describe("the items written in their CORRECT order; they will be shuffled for the learner"),
+          })
+          .nullable()
+          .describe("fill ONLY when type is 'dragdrop', else null"),
+
+        // type === "scenario": a 'what would you do' situation with branching feedback
+        scenario: z
+          .object({
+            situation: z.string().describe("the scenario set-up the learner faces"),
+            choices: z
+              .array(
+                z.object({
+                  text: z.string().describe("a decision the learner could make"),
+                  isCorrect: z.boolean().describe("whether this is the best choice"),
+                  feedback: z.string().describe("what happens / why, shown after picking this"),
+                }),
+              )
+              .min(2)
+              .max(4),
+          })
+          .nullable()
+          .describe("fill ONLY when type is 'scenario', else null"),
+
+        // type === "audio": a listening exercise. Transcript is read aloud via text-to-speech.
+        audio: z
+          .object({
+            transcript: z
+              .string()
+              .describe("the spoken passage the learner listens to (2-5 sentences)"),
+            questions: z.array(interactiveMcqItem).min(1).max(3),
+          })
+          .nullable()
+          .describe("fill ONLY when type is 'audio', else null"),
+      }),
+    )
+    .min(2)
+    .max(4)
+    .describe("2-4 interactive elements of varying types for this lesson"),
+})
+
+export type GeneratedInteractive = z.infer<typeof interactiveElementsSchema>
+
+// Wire-format types matching the React component configs.
+export type InteractiveElementConfig = {
+  id: string
+  type: "quiz" | "dragdrop" | "scenario" | "audio"
+  title: string
+  description?: string
+  config: Record<string, unknown>
+}
+
+// --- Interleaved lesson blocks ----------------------------------------------
+// A lesson is an ordered list of blocks so visuals and exercises sit INSIDE the
+// teaching flow (right where a concept is introduced) rather than dumped at the end.
+
+// An exercise block reused inside the lesson flow. Drag-and-drop now supports
+// ordering (sequence), matching (term<->definition) and categorizing (sort into groups).
+const exerciseBlockSchema = z.object({
+  type: z
+    .enum(["quiz", "dragdrop", "scenario", "audio"])
+    .describe("which kind of interactive exercise this is"),
+  title: z.string().describe("short title for the exercise"),
+  description: z.string().nullable().describe("one-line intro, or null"),
+
+  quiz: z
+    .object({ questions: z.array(interactiveMcqItem).min(1).max(3) })
+    .nullable()
+    .describe("fill ONLY when type is 'quiz', else null"),
+
+  dragdrop: z
+    .object({
+      mode: z
+        .enum(["ordering", "matching", "categorizing"])
+        .describe("ordering = put in sequence; matching = pair terms to definitions; categorizing = sort items into groups"),
+      instruction: z.string().describe("what the learner should do"),
+      // ordering
+      orderedItems: z
+        .array(z.string())
+        .nullable()
+        .describe("ONLY for mode 'ordering': items in their CORRECT order; they will be shuffled for the learner"),
+      // matching
+      pairs: z
+        .array(z.object({ term: z.string(), match: z.string().describe("the definition/answer it pairs with") }))
+        .nullable()
+        .describe("ONLY for mode 'matching': the correct term/definition pairs"),
+      // categorizing
+      categories: z.array(z.string()).nullable().describe("ONLY for mode 'categorizing': the group names"),
+      categorizedItems: z
+        .array(z.object({ text: z.string(), category: z.string().describe("the category this item belongs in") }))
+        .nullable()
+        .describe("ONLY for mode 'categorizing': items labelled with their correct category"),
+    })
+    .nullable()
+    .describe("fill ONLY when type is 'dragdrop', else null"),
+
+  scenario: z
+    .object({
+      situation: z.string().describe("the scenario set-up the learner faces"),
+      choices: z
+        .array(
+          z.object({
+            text: z.string(),
+            isCorrect: z.boolean(),
+            feedback: z.string().describe("what happens / why, shown after picking this"),
+          }),
+        )
+        .min(2)
+        .max(4),
+    })
+    .nullable()
+    .describe("fill ONLY when type is 'scenario', else null"),
+
+  audio: z
+    .object({
+      transcript: z.string().describe("the spoken passage the learner listens to (2-5 sentences)"),
+      questions: z.array(interactiveMcqItem).min(1).max(3),
+    })
+    .nullable()
+    .describe("fill ONLY when type is 'audio', else null"),
+})
+
+// A visual block, rendered with HTML/CSS (no image files) to teach/demonstrate a concept.
+const visualBlockSchema = z.object({
+  variant: z
+    .enum(["flow", "comparison", "stats", "timeline", "labeled"])
+    .describe(
+      "flow = process steps with arrows; comparison = side-by-side columns; stats = key figures; timeline = chronological events; labeled = a central concept with labelled parts",
+    ),
+  title: z.string().describe("the visual's title"),
+  caption: z.string().nullable().describe("a short caption explaining the visual, or null"),
+
+  // flow / timeline: ordered steps or events
+  steps: z
+    .array(z.object({ label: z.string(), detail: z.string().describe("one short sentence") }))
+    .nullable()
+    .describe("ONLY for 'flow' or 'timeline': the ordered steps/events"),
+
+  // comparison: 2-3 columns
+  columns: z
+    .array(z.object({ heading: z.string(), points: z.array(z.string()).min(1).max(4) }))
+    .nullable()
+    .describe("ONLY for 'comparison': 2-3 columns of bullet points"),
+
+  // stats: key figures
+  stats: z
+    .array(z.object({ value: z.string().describe("e.g. '70%' or '3x'"), label: z.string() }))
+    .nullable()
+    .describe("ONLY for 'stats': key figure cards"),
+
+  // labeled: a central idea with labelled parts
+  centerLabel: z.string().nullable().describe("ONLY for 'labeled': the central concept name"),
+  parts: z
+    .array(z.object({ label: z.string(), detail: z.string().describe("one short sentence") }))
+    .nullable()
+    .describe("ONLY for 'labeled': the labelled parts around the centre"),
+})
+
+// A lesson is built from SEGMENTS. Each segment teaches one concept and MUST
+// contain teaching prose, a concept visual, and a hands-on exercise — so visuals
+// and exercises are always woven through the lesson, never dumped at the end.
+export const lessonBlocksSchema = z.object({
+  intro: z
+    .string()
+    .describe("a short markdown opening paragraph (40-100 words) framing what the lesson covers"),
+  segments: z
+    .array(
+      z.object({
+        concept: z
+          .string()
+          .describe("the name of the single concept this segment teaches"),
+        prose: z
+          .string()
+          .describe("a markdown passage (80-180 words) teaching this concept"),
+        visual: visualBlockSchema.describe("a concept visual that helps the learner understand this concept"),
+        exercise: exerciseBlockSchema.describe("a hands-on exercise that demonstrates or checks this concept"),
+      }),
+    )
+    .min(3)
+    .max(5)
+    .describe(
+      "3-5 teaching segments. Each MUST teach a concept with prose, a supporting visual, AND an exercise. " +
+        "Vary the visual variants and exercise types across segments. Across the whole lesson include at least one " +
+        "drag-and-drop exercise AND at least one listening (audio) exercise. Use different drag-and-drop modes " +
+        "(ordering, matching, categorizing) where they fit the concept.",
+    ),
+})
+
+export type GeneratedLessonBlocks = z.infer<typeof lessonBlocksSchema>
+
+// Wire-format block stored in lessons.contentBlocks and consumed by the renderer.
+export type LessonBlock =
+  | { kind: "prose"; markdown: string }
+  | { kind: "visual"; variant: string; data: Record<string, unknown> }
+  | { kind: "exercise"; element: InteractiveElementConfig }
+
 // --- Test questions ---------------------------------------------------------
 export const testSchema = z.object({
   questions: z
