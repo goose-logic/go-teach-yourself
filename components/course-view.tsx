@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { CurriculumTab } from "@/components/curriculum-tab"
 import { TimetableTab } from "@/components/timetable-tab"
 import { AssessmentsTab } from "@/components/assessments-tab"
-import { ArrowLeft, CalendarDays, Clock, Target } from "lucide-react"
+import { ArrowLeft, Award, CalendarDays, Clock, Target } from "lucide-react"
 
 export function CourseView({ detail }: { detail: CourseDetail }) {
   const { course } = detail
@@ -18,6 +18,7 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
 
   const completedLessons = lessons.filter((l) => l.completed).length
   const progress = lessons.length > 0 ? Math.round((completedLessons / lessons.length) * 100) : 0
+  const isComplete = lessons.length > 0 && completedLessons === lessons.length
 
   const totalHours = useMemo(() => {
     const mins = lessons.reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0)
@@ -75,6 +76,42 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
           </div>
           <Progress value={progress} />
         </div>
+
+        {/* Certificate: unlocked once every lesson is complete */}
+        {lessons.length > 0 &&
+          (isComplete ? (
+            <div className="flex flex-col items-start gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Award className="h-5 w-5 text-primary" aria-hidden="true" />
+                </span>
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground">Course complete — your certificate is ready</span>
+                  <span className="text-sm text-muted-foreground">
+                    You&apos;ve finished every lesson. Congratulations!
+                  </span>
+                </div>
+              </div>
+              <Button asChild className="shrink-0">
+                <Link href={`/course/${course.id}/certificate`}>
+                  <Award className="h-4 w-4" />
+                  View certificate
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl border border-dashed p-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
+                <Award className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+              </span>
+              <div className="flex flex-col">
+                <span className="font-medium text-foreground">Earn your certificate</span>
+                <span className="text-sm text-muted-foreground">
+                  Complete all {lessons.length} lessons to unlock your certificate of completion.
+                </span>
+              </div>
+            </div>
+          ))}
       </div>
 
       <Tabs defaultValue="curriculum">
