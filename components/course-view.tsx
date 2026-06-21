@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import type { CourseDetail } from "@/lib/types"
+import { hasAnyOutstandingCharges } from "@/lib/deadlines"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -10,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { CurriculumTab } from "@/components/curriculum-tab"
 import { TimetableTab } from "@/components/timetable-tab"
 import { AssessmentsTab } from "@/components/assessments-tab"
-import { ArrowLeft, Award, CalendarDays, Clock, Target } from "lucide-react"
+import { ArrowLeft, Award, CalendarDays, Clock, Lock, Target } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function CourseView({ detail }: { detail: CourseDetail }) {
   const { course } = detail
@@ -19,6 +21,7 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
   const completedLessons = lessons.filter((l) => l.completed).length
   const progress = lessons.length > 0 ? Math.round((completedLessons / lessons.length) * 100) : 0
   const isComplete = lessons.length > 0 && completedLessons === lessons.length
+  const isFrozen = hasAnyOutstandingCharges(detail.assessments, course.startDate, course.isPaused)
 
   const totalHours = useMemo(() => {
     const mins = lessons.reduce((sum, l) => sum + (l.durationMinutes ?? 0), 0)
@@ -27,6 +30,19 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-10">
+      {/* Freeze banner */}
+      {isFrozen && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <Lock className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div className="flex flex-col gap-1">
+            <p className="font-medium text-destructive">Course access frozen</p>
+            <p className="text-sm text-destructive/80">
+              You have an outstanding late fee. Go to the Tests & Projects tab to pay and unlock the course.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Back button */}
       <div className="mb-6">
         <Button asChild variant="ghost" size="sm">
@@ -116,12 +132,16 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
 
       <Tabs defaultValue="curriculum">
         <TabsList>
-          <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-          <TabsTrigger value="timetable">Timetable</TabsTrigger>
+          <TabsTrigger value="curriculum" disabled={isFrozen}>
+            Curriculum
+          </TabsTrigger>
+          <TabsTrigger value="timetable" disabled={isFrozen}>
+            Timetable
+          </TabsTrigger>
           <TabsTrigger value="assessments">Tests &amp; Projects</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="curriculum">
+        <TabsContent value="curriculum" className={cn(isFrozen && "pointer-events-none opacity-50")}>
           <CurriculumTab
             modules={detail.modules}
             lessons={lessons}
@@ -132,9 +152,9 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
           />
         </TabsContent>
 
-  <TabsContent value="timetable">
-    <TimetableTab schedule={detail.schedule} totalWeeks={course.totalWeeks} assessments={detail.assessments} />
-  </TabsContent>
+    <TabsContent value="timetable" className={cn(isFrozen && "pointer-events-none opacity-50")}>
+      <TimetableTab schedule={detail.schedule} totalWeeks={course.totalWeeks} assessments={detail.assessments} />
+    </TabsContent>
 
         <TabsContent value="assessments">
           <AssessmentsTab assessments={detail.assessments} schedule={detail.schedule} course={course} />

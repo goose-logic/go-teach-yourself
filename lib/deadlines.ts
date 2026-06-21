@@ -80,3 +80,18 @@ export function extensionPassesRemaining(course: Pick<Course, "extensionPassesUs
 export function freePauseAvailable(course: Pick<Course, "pausesUsed">): boolean {
   return course.pausesUsed < FREE_PAUSES
 }
+
+/**
+ * Check if a course has any outstanding late charges across all its assessments.
+ * If so, the course should be frozen (greyed out, unclickable) until fees are paid.
+ */
+export function hasAnyOutstandingCharges(
+  assessments: Pick<
+    Assessment,
+    "deadline" | "extensionDays" | "weekNumber" | "status" | "lateChargePaid" | "lateChargeWaived"
+  >[],
+  startDate: Date | string | null,
+  isPaused: boolean,
+): boolean {
+  return assessments.some((a) => hasOutstandingCharge(a, startDate, isPaused))
+}
