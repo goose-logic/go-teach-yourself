@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Markdown } from "@/components/markdown"
 import { LateFeeFlow, LateFeePaid } from "@/components/accountability/late-fee-flow"
+import { ReviewOptionsModal } from "@/components/assessments/review-options-modal"
 import { cn } from "@/lib/utils"
 import { CalendarClock, Check, CheckCircle2, ClipboardList, Clock, FileUp, FolderGit2, Loader2, Trophy, X } from "lucide-react"
 
@@ -201,6 +202,7 @@ function TestRunner({
   const [submitted, setSubmitted] = useState(initialScore !== null)
   const [score, setScore] = useState<number | null>(initialScore)
   const [saving, setSaving] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
 
   function handleSubmit() {
     const correct = questions.reduce(
@@ -211,7 +213,14 @@ function TestRunner({
     setScore(pct)
     setSubmitted(true)
     setSaving(true)
-    submitTest(assessmentId, pct).finally(() => setSaving(false))
+    submitTest(assessmentId, pct).finally(() => {
+      setSaving(false)
+      // Show review options for summative tests
+      if (initialScore === null) {
+        // Only show for new submissions, not for already-graded tests
+        setTimeout(() => setShowReviewModal(true), 500)
+      }
+    })
     onGraded(pct)
   }
 
@@ -270,6 +279,45 @@ function TestRunner({
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           Submit test
         </Button>
+      )}
+
+      {submitted && score !== null && (
+        <ReviewOptionsModal
+          open={showReviewModal}
+          onOpenChange={setShowReviewModal}
+          assessment={
+            {
+              id: assessmentId,
+              score,
+              courseId: 0,
+              userId: "",
+              type: "test",
+              title: "",
+              status: "submitted",
+              weekNumber: 0,
+              category: "summative",
+              gradeWeight: 0,
+              description: null,
+              moduleId: null,
+              questions: null,
+              submission: null,
+              fileName: null,
+              feedback: null,
+              submittedAt: new Date(),
+              deadline: null,
+              extensionDays: 0,
+              lateChargePaid: false,
+              lateChargeWaived: false,
+              reviewType: null,
+              tutorId: null,
+              tutorMarkingTier: null,
+              tutorMarkingFeeCents: null,
+              tutorMarkingFeedback: null,
+              tutorSessionId: null,
+              createdAt: new Date(),
+            } as unknown as Assessment
+          }
+        />
       )}
     </div>
   )
