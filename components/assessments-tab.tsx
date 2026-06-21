@@ -1,17 +1,27 @@
 "use client"
 
-import type { Assessment, ScheduleItem } from "@/lib/types"
+import type { Assessment, Course, ScheduleItem } from "@/lib/types"
 import { AssessmentCard } from "@/components/assessment-card"
+import { AccountabilitySummary } from "@/components/accountability/accountability-summary"
+import {
+  effectiveDeadline,
+  extensionPassesRemaining,
+  freePauseAvailable,
+  hasOutstandingCharge,
+  isOverdue,
+  LATE_FEE_CENTS,
+  MAX_EXTENSIONS,
+} from "@/lib/deadlines"
 import { ClipboardList } from "lucide-react"
 
 export function AssessmentsTab({
   assessments,
   schedule,
-  startDate,
+  course,
 }: {
   assessments: Assessment[]
   schedule: ScheduleItem[]
-  startDate: Date | string | null
+  course: Course
 }) {
   if (assessments.length === 0) {
     return (
@@ -21,6 +31,10 @@ export function AssessmentsTab({
       </div>
     )
   }
+
+  const startDate = course.startDate
+  const isPaused = course.isPaused
+  const passesRemaining = extensionPassesRemaining(course)
 
   // Estimated minutes per assessment, taken from its matching schedule item.
   const minutesByRef = new Map<string, number>()
@@ -36,25 +50,32 @@ export function AssessmentsTab({
     return a.type === "test" ? 45 : a.category === "final" ? 240 : 120
   }
 
-  // Due date = end of the assessment's week (week N is due start + N*7 days).
-  const base = startDate ? new Date(startDate) : null
-  function dueDate(weekNumber: number): Date | null {
-    if (!base) return null
-    const d = new Date(base)
-    d.setDate(d.getDate() + weekNumber * 7)
-    return d
-  }
-
   const sorted = [...assessments].sort((a, b) => a.weekNumber - b.weekNumber)
+
+  const outstandingCount = sorted.filter((a) => hasOutstandingCharge(a, startDate, isPaused)).length
 
   return (
     <div className="mt-2 flex flex-col gap-4">
+      <AccountabilitySummary
+        courseId={course.id}
+        passesRemaining={passesRemaining}
+        maxPasses={MAX_EXTENSIONS}
+        isPaused={isPaused}
+        freePauseAvailable={freePauseAvailable(course)}
+        pausedUntil={course.pausedUntil}
+        outstandingCents={outstandingCount * LATE_FEE_CENTS}
+      />
+
       {sorted.map((a) => (
         <AssessmentCard
           key={a.id}
           assessment={a}
           estimatedMinutes={estimatedMinutes(a)}
-          dueDate={dueDate(a.weekNumber)}
+          dueDate={effectiveDeadline(a, startDate)}
+          overdue={isOverdue(a, startDate, isPaused)}
+          outstandingCharge={hasOutstandingCharge(a, startDate, isPaused)}
+          chargeSettled={isOverdue(a, startDate, isPaused) && (a.lateChargePaid || a.lateChargeWaived)}
+          passesRemaining={passesRemaining}
         />
       ))}
     </div>

@@ -82,6 +82,7 @@ export default async function DashboardPage() {
                   progress={course.progress}
                   totalWeeks={course.totalWeeks}
                   hoursPerWeek={course.hoursPerWeek}
+                  hasOverdue={course.hasOverdue}
                 />
               ))}
             </div>

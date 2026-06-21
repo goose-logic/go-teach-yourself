@@ -17,6 +17,7 @@ import {
   gradeSubmission,
 } from "@/lib/ai/generate"
 import type { FormativeQuestion } from "@/lib/types"
+import { isOverdue } from "@/lib/deadlines"
 import { getDemoCourse } from "@/lib/demo-data"
 
 async function getUserId() {
@@ -76,8 +77,17 @@ export async function createCourse(input: {
   // Persist modules, lessons, assessments, and build the timetable.
   const daysPerWeek = input.pace === "full_time" ? 5 : 3
 
+  // Grade weights: the capstone is 35% and the per-module summative tests share
+  // the remaining 65%, distributed so every assessment adds up to exactly 100%.
+  const CAPSTONE_WEIGHT = 35
+  const numSummative = curriculum.modules.length
+  const baseSummativeWeight = numSummative > 0 ? Math.floor((100 - CAPSTONE_WEIGHT) / numSummative) : 0
+  const summativeRemainder = numSummative > 0 ? 100 - CAPSTONE_WEIGHT - baseSummativeWeight * numSummative : 0
+
   for (let m = 0; m < curriculum.modules.length; m++) {
     const mod = curriculum.modules[m]
+    // Spread the leftover points across the first few modules so the total is exact.
+    const summativeWeight = baseSummativeWeight + (m < summativeRemainder ? 1 : 0)
     const [moduleRow] = await db
       .insert(modules)
       .values({
@@ -147,7 +157,7 @@ export async function createCourse(input: {
         title: summativeTitle,
         description: summativeDesc,
         weekNumber: mod.weekNumber,
-        gradeWeight: 7, // 7% per summative test (70% total across 10 weeks)
+        gradeWeight: summativeWeight, // summative tests share the 65% left after the capstone
         status: "pending",
       })
       .returning()
@@ -171,7 +181,7 @@ export async function createCourse(input: {
         `A comprehensive capstone project that brings together everything from the whole course ` +
         `("${input.subject}"). It should require the learner to apply the skills and knowledge built across all ${finalWeek} weeks.`,
       weekNumber: finalWeek,
-      gradeWeight: 37, // 37% for the capstone project
+      gradeWeight: CAPSTONE_WEIGHT, // 35% for the capstone project
       status: "pending",
     })
     .returning()
@@ -225,8 +235,17 @@ export async function seedDemoCourse(key: string) {
 
   const daysPerWeek = demo.pace === "full_time" ? 5 : 3
 
+  // Grade weights: the capstone is 35% and the per-module summative tests share
+  // the remaining 65%, distributed so every assessment adds up to exactly 100%.
+  const CAPSTONE_WEIGHT = 35
+  const numSummative = demo.modules.length
+  const baseSummativeWeight = numSummative > 0 ? Math.floor((100 - CAPSTONE_WEIGHT) / numSummative) : 0
+  const summativeRemainder = numSummative > 0 ? 100 - CAPSTONE_WEIGHT - baseSummativeWeight * numSummative : 0
+
   for (let m = 0; m < demo.modules.length; m++) {
     const mod = demo.modules[m]
+    // Spread the leftover points across the first few modules so the total is exact.
+    const summativeWeight = baseSummativeWeight + (m < summativeRemainder ? 1 : 0)
     const [moduleRow] = await db
       .insert(modules)
       .values({
@@ -322,7 +341,7 @@ export async function seedDemoCourse(key: string) {
         title: sumTitle,
         description: sumDesc,
         weekNumber: mod.weekNumber,
-        gradeWeight: 7, // 7% per summative test (70% total across 10 weeks)
+        gradeWeight: summativeWeight, // summative tests share the 65% left after the capstone
         status: "pending",
         questions: a?.type === "test" ? a.questions : null,
       })
@@ -346,7 +365,7 @@ export async function seedDemoCourse(key: string) {
         demoFinal?.description ??
         `A comprehensive capstone project applying everything from ${demo.title}.`,
       weekNumber: finalWeek,
-      gradeWeight: 37, // 37% for the capstone project
+      gradeWeight: CAPSTONE_WEIGHT, // 35% for the capstone project
       status: "pending",
       questions: demoFinal?.type === "project" ? demoFinal.brief : null,
     })
@@ -385,18 +404,29 @@ export async function getCoursesWithProgress() {
     .from(lessons)
     .where(eq(lessons.userId, userId))
 
+  const allAssessments = await db
+    .select()
+    .from(assessments)
+    .where(eq(assessments.userId, userId))
+
   return list.map((course) => {
     const courseLessons = allLessons.filter((l) => l.courseId === course.id)
     const total = courseLessons.length
     const done = courseLessons.filter((l) => l.completed).length
+    const hasOverdue = allAssessments
+      .filter((a) => a.courseId === course.id)
+      .some((a) => isOverdue(a, course.startDate, course.isPaused))
     return {
       ...course,
       totalLessons: total,
       completedLessons: done,
       progress: total > 0 ? Math.round((done / total) * 100) : 0,
+      hasOverdue,
     }
   })
 }
+
+export type CourseWithProgress = Awaited<ReturnType<typeof getCoursesWithProgress>>[number]
 
 export async function getCourseDetail(courseId: number) {
   const userId = await getUserId()
