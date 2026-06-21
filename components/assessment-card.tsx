@@ -29,6 +29,7 @@ export function AssessmentCard({
   dueDate,
   overdue = false,
   outstandingCharge = false,
+  chargeSettled = false,
   passesRemaining = 0,
 }: {
   assessment: Assessment
@@ -36,6 +37,10 @@ export function AssessmentCard({
   dueDate?: Date | null
   overdue?: boolean
   outstandingCharge?: boolean
+  // A settled late charge (paid for, or waived by an extension) on an item that
+  // was overdue — used to show a reassuring "caught up" confirmation. Computed by
+  // the parent from fresh server data so it stays correct after router.refresh().
+  chargeSettled?: boolean
   passesRemaining?: number
 }) {
   const [data, setData] = useState<Assessment>(assessment)
@@ -46,9 +51,6 @@ export function AssessmentCard({
   const isTest = data.type === "test"
   const isGraded = data.status === "graded"
   const isFinal = data.category === "final"
-  // A settled late charge (paid for, or waived by an extension) on an item that
-  // was overdue — used to show a reassuring "caught up" confirmation.
-  const chargeSettled = overdue && (data.lateChargePaid || data.lateChargeWaived)
 
   async function handleOpen() {
     const next = !open

@@ -74,6 +74,7 @@ export function AssessmentsTab({
           dueDate={effectiveDeadline(a, startDate)}
           overdue={isOverdue(a, startDate, isPaused)}
           outstandingCharge={hasOutstandingCharge(a, startDate, isPaused)}
+          chargeSettled={isOverdue(a, startDate, isPaused) && (a.lateChargePaid || a.lateChargeWaived)}
           passesRemaining={passesRemaining}
         />
       ))}
