@@ -293,23 +293,33 @@ const visualBlockSchema = z.object({
     .describe("ONLY for 'labeled': the labelled parts around the centre"),
 })
 
+// A lesson is built from SEGMENTS. Each segment teaches one concept and MUST
+// contain teaching prose, a concept visual, and a hands-on exercise — so visuals
+// and exercises are always woven through the lesson, never dumped at the end.
 export const lessonBlocksSchema = z.object({
-  blocks: z
+  intro: z
+    .string()
+    .describe("a short markdown opening paragraph (40-100 words) framing what the lesson covers"),
+  segments: z
     .array(
       z.object({
-        kind: z.enum(["prose", "visual", "exercise"]).describe("the type of this block"),
+        concept: z
+          .string()
+          .describe("the name of the single concept this segment teaches"),
         prose: z
           .string()
-          .nullable()
-          .describe("ONLY when kind is 'prose': a markdown passage (80-200 words) teaching one idea"),
-        visual: visualBlockSchema.nullable().describe("ONLY when kind is 'visual', else null"),
-        exercise: exerciseBlockSchema.nullable().describe("ONLY when kind is 'exercise', else null"),
+          .describe("a markdown passage (80-180 words) teaching this concept"),
+        visual: visualBlockSchema.describe("a concept visual that helps the learner understand this concept"),
+        exercise: exerciseBlockSchema.describe("a hands-on exercise that demonstrates or checks this concept"),
       }),
     )
-    .min(7)
-    .max(14)
+    .min(3)
+    .max(5)
     .describe(
-      "An ordered, INTERLEAVED lesson: alternate prose with visuals and exercises so concepts are taught then immediately demonstrated/checked. Start with prose. Include at least 2 visuals and at least 3 exercises spread THROUGHOUT (never all at the end), with at least one drag-and-drop and at least one listening (audio) exercise.",
+      "3-5 teaching segments. Each MUST teach a concept with prose, a supporting visual, AND an exercise. " +
+        "Vary the visual variants and exercise types across segments. Across the whole lesson include at least one " +
+        "drag-and-drop exercise AND at least one listening (audio) exercise. Use different drag-and-drop modes " +
+        "(ordering, matching, categorizing) where they fit the concept.",
     ),
 })
 

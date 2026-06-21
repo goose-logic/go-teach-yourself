@@ -284,25 +284,31 @@ export async function generateLessonBlocks(params: {
     model: MODEL,
     experimental_output: Output.object({ schema: lessonBlocksSchema }),
     system:
-      "You are an expert instructional designer. You build a lesson as an ORDERED, INTERLEAVED sequence of blocks so it never feels like a static page of text. " +
-      "Teach a concept in a short prose block, then IMMEDIATELY reinforce it with a relevant visual or a hands-on exercise before moving on. " +
-      "Spread visuals and exercises THROUGHOUT the lesson — never cluster them all at the end. " +
-      "Visuals (rendered as diagrams, not images) should genuinely help understanding: use 'flow' for processes, 'timeline' for chronology, 'comparison' for contrasts, 'stats' for key figures, 'labeled' for parts of a concept. " +
+      "You are an expert instructional designer. You build a lesson as a series of TEACHING SEGMENTS so it never feels like a static page of text. " +
+      "Each segment teaches ONE concept with: a short prose passage, a concept VISUAL that aids understanding, and a hands-on EXERCISE — in that order — so visuals and exercises are woven THROUGHOUT the lesson, never dumped at the end. " +
+      "Visuals (rendered as diagrams, not images) should genuinely help understanding: use 'flow' for processes, 'timeline' for chronology, 'comparison' for contrasts, 'stats' for key figures, 'labeled' for the parts of a concept. Vary the variant across segments. " +
       "Use drag-and-drop in different ways to DEMONSTRATE concepts: 'ordering' for sequences, 'matching' to pair terms with definitions, 'categorizing' to sort items into groups. " +
-      "Always include at least one 'audio' listening exercise and at least one drag-and-drop. " +
-      "For each block fill ONLY the field matching its kind; leave the others null. For each exercise fill ONLY the sub-object matching its type. " +
-      "Keep prose blocks focused (80-200 words) on a single idea. Ensure exactly one correct answer per question.",
+      "Across the whole lesson include at least one 'audio' listening exercise and at least one drag-and-drop. " +
+      "Fill ONLY the visual sub-fields matching its variant, and ONLY the exercise sub-object matching its type; leave the others null. " +
+      "Keep prose focused on a single idea. Ensure exactly one correct answer per question.",
     prompt:
       `Course: ${params.courseTitle}\nModule: ${params.moduleTitle}\nLesson: ${params.lessonTitle}\nObjective: ${params.objective}\n\n` +
-      `Design the full interleaved lesson now.`,
+      `Design the full lesson now as 3-5 teaching segments.`,
   })
 
+  const out = experimental_output
   const blocks: LessonBlock[] = []
-  experimental_output.blocks.forEach((b, i) => {
-    if (b.kind === "prose" && b.prose) {
-      blocks.push({ kind: "prose", markdown: b.prose })
-    } else if (b.kind === "visual" && b.visual) {
-      const v = b.visual
+
+  // Opening framing paragraph.
+  if (out.intro) blocks.push({ kind: "prose", markdown: out.intro })
+
+  // Each segment becomes prose -> visual -> exercise, keeping teaching and
+  // practice interleaved throughout the lesson.
+  out.segments.forEach((seg, i) => {
+    if (seg.prose) blocks.push({ kind: "prose", markdown: seg.prose })
+
+    const v = seg.visual
+    if (v) {
       blocks.push({
         kind: "visual",
         variant: v.variant,
@@ -316,8 +322,10 @@ export async function generateLessonBlocks(params: {
           parts: v.parts ?? undefined,
         },
       })
-    } else if (b.kind === "exercise" && b.exercise) {
-      const element = buildExerciseElement(b.exercise, i)
+    }
+
+    if (seg.exercise) {
+      const element = buildExerciseElement(seg.exercise, i)
       if (element) blocks.push({ kind: "exercise", element })
     }
   })
