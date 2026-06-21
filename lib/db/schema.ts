@@ -136,6 +136,13 @@ export const assessments = pgTable("assessments", {
   extensionDays: integer("extensionDays").notNull().default(0), // days added via extension passes
   lateChargePaid: boolean("lateChargePaid").notNull().default(false),
   lateChargeWaived: boolean("lateChargeWaived").notNull().default(false),
+  // --- Review options for summative tests -----------------------------------
+  reviewType: text("reviewType"), // null | ai | tutor_marking | tutor_plus_session
+  tutorId: text("tutorId"), // if tutor is selected
+  tutorMarkingTier: text("tutorMarkingTier"), // standard | premium | expert (for pricing tiers)
+  tutorMarkingFeeCents: integer("tutorMarkingFeeCents"), // fee in cents for tutor marking
+  tutorMarkingFeedback: text("tutorMarkingFeedback"), // tutor's written feedback on submission
+  tutorSessionId: integer("tutorSessionId"), // linked booking if tutor_plus_session selected
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
