@@ -57,7 +57,29 @@ export function AudioListeningExercise({
   const isAnswered = selectedIndex !== null && selectedIndex !== undefined
   const isCorrect = selectedIndex === currentQuestion.correctIndex
 
+  // When there's no real audio file, read the transcript aloud via the browser's
+  // built-in speech synthesis so the listening exercise still works with no backend.
+  const useSpeech = !config.audioUrl && !!config.transcript
+
   function handlePlayPause() {
+    if (useSpeech) {
+      const synth = typeof window !== "undefined" ? window.speechSynthesis : null
+      if (!synth) return
+      if (isPlaying) {
+        synth.cancel()
+        setIsPlaying(false)
+      } else {
+        synth.cancel()
+        const utterance = new SpeechSynthesisUtterance(config.transcript)
+        utterance.rate = 0.95
+        utterance.onend = () => setIsPlaying(false)
+        utterance.onerror = () => setIsPlaying(false)
+        synth.speak(utterance)
+        setIsPlaying(true)
+      }
+      return
+    }
+
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause()
@@ -125,6 +147,7 @@ export function AudioListeningExercise({
             variant="outline"
             onClick={handlePlayPause}
             className="shrink-0"
+            aria-label={isPlaying ? "Pause audio" : "Play audio"}
           >
             {isPlaying ? (
               <Pause className="h-4 w-4" />
@@ -132,31 +155,42 @@ export function AudioListeningExercise({
               <Play className="h-4 w-4" />
             )}
           </Button>
-          <div className="flex-1 space-y-1">
-            <div className="h-1 bg-secondary rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all"
-                style={{
-                  width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%",
-                }}
-              />
+          {useSpeech ? (
+            <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+              <Volume2 className="h-4 w-4" />
+              <span>{isPlaying ? "Playing the passage aloud…" : "Press play to listen to the passage"}</span>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
-          <Volume2 className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <>
+              <div className="flex-1 space-y-1">
+                <div className="h-1 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{
+                      width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%",
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+              <Volume2 className="h-4 w-4 text-muted-foreground" />
+            </>
+          )}
         </div>
 
-        <audio
-          ref={audioRef}
-          src={config.audioUrl}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
-          onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
-        />
+        {!useSpeech && (
+          <audio
+            ref={audioRef}
+            src={config.audioUrl}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
+            onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+          />
+        )}
 
         {config.transcript && (
           <Button

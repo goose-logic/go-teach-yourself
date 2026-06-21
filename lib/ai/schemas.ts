@@ -103,6 +103,90 @@ export const openGradeSchema = z.object({
   feedback: z.string().describe("one or two short sentences of feedback"),
 })
 
+// --- Interactive in-lesson elements -----------------------------------------
+// The AI fills only the block that matches `type`; the rest stay null.
+const interactiveMcqItem = z.object({
+  question: z.string(),
+  options: z.array(z.string()).min(2).max(4),
+  correctIndex: z.number().int().min(0).describe("index of the correct option"),
+  explanation: z.string().describe("why the answer is correct"),
+})
+
+export const interactiveElementsSchema = z.object({
+  elements: z
+    .array(
+      z.object({
+        type: z
+          .enum(["quiz", "dragdrop", "scenario", "audio"])
+          .describe("which kind of interactive exercise this is"),
+        title: z.string().describe("short title for the exercise"),
+        description: z.string().nullable().describe("one-line intro, or null"),
+
+        // type === "quiz": 2-4 quick check questions
+        quiz: z
+          .object({ questions: z.array(interactiveMcqItem).min(2).max(4) })
+          .nullable()
+          .describe("fill ONLY when type is 'quiz', else null"),
+
+        // type === "dragdrop": ordering exercise. List items in the CORRECT order.
+        dragdrop: z
+          .object({
+            instruction: z.string().describe("e.g. 'Arrange these events in chronological order'"),
+            orderedItems: z
+              .array(z.string())
+              .min(3)
+              .max(6)
+              .describe("the items written in their CORRECT order; they will be shuffled for the learner"),
+          })
+          .nullable()
+          .describe("fill ONLY when type is 'dragdrop', else null"),
+
+        // type === "scenario": a 'what would you do' situation with branching feedback
+        scenario: z
+          .object({
+            situation: z.string().describe("the scenario set-up the learner faces"),
+            choices: z
+              .array(
+                z.object({
+                  text: z.string().describe("a decision the learner could make"),
+                  isCorrect: z.boolean().describe("whether this is the best choice"),
+                  feedback: z.string().describe("what happens / why, shown after picking this"),
+                }),
+              )
+              .min(2)
+              .max(4),
+          })
+          .nullable()
+          .describe("fill ONLY when type is 'scenario', else null"),
+
+        // type === "audio": a listening exercise. Transcript is read aloud via text-to-speech.
+        audio: z
+          .object({
+            transcript: z
+              .string()
+              .describe("the spoken passage the learner listens to (2-5 sentences)"),
+            questions: z.array(interactiveMcqItem).min(1).max(3),
+          })
+          .nullable()
+          .describe("fill ONLY when type is 'audio', else null"),
+      }),
+    )
+    .min(2)
+    .max(4)
+    .describe("2-4 interactive elements of varying types for this lesson"),
+})
+
+export type GeneratedInteractive = z.infer<typeof interactiveElementsSchema>
+
+// Wire-format types matching the React component configs.
+export type InteractiveElementConfig = {
+  id: string
+  type: "quiz" | "dragdrop" | "scenario" | "audio"
+  title: string
+  description?: string
+  config: Record<string, unknown>
+}
+
 // --- Test questions ---------------------------------------------------------
 export const testSchema = z.object({
   questions: z

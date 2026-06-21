@@ -10,6 +10,8 @@ import {
   testSchema,
   projectSchema,
   gradeSchema,
+  interactiveElementsSchema,
+  type InteractiveElementConfig,
 } from "./schemas"
 
 type IntakeAnswer = { question: string; answer: string }
@@ -105,6 +107,128 @@ export async function generateFormative(params: {
       `Lesson content:\n${params.content}\n\nWrite the formative check.`,
   })
   return experimental_output.questions
+}
+
+// Generate 2-4 interactive in-lesson elements (quiz, drag-drop, scenario, listening).
+export async function generateInteractiveElements(params: {
+  courseTitle: string
+  lessonTitle: string
+  objective: string
+  content: string
+}): Promise<InteractiveElementConfig[]> {
+  const { experimental_output } = await generateText({
+    model: MODEL,
+    experimental_output: Output.object({ schema: interactiveElementsSchema }),
+    system:
+      "You design GENUINELY INTERACTIVE in-lesson activities so a lesson never feels like passive reading. " +
+      "Produce 2-4 elements of DIFFERENT types drawn from: 'quiz' (quick check questions), " +
+      "'dragdrop' (put items in the correct order), 'scenario' (a 'what would you do' decision with branching feedback), " +
+      "and 'audio' (a short listening passage read aloud, followed by comprehension questions). " +
+      "ALWAYS include at least one 'audio' listening element. " +
+      "For each element, fill ONLY the block matching its type and leave the others null. " +
+      "Base everything strictly on the lesson content. Keep text concise and unambiguous, with exactly one correct option per question.",
+    prompt:
+      `Course: ${params.courseTitle}\nLesson: ${params.lessonTitle}\nObjective: ${params.objective}\n\n` +
+      `Lesson content:\n${params.content}\n\nDesign the interactive elements.`,
+  })
+
+  const out: InteractiveElementConfig[] = []
+  experimental_output.elements.forEach((el, i) => {
+    const base = { id: `el-${i}`, title: el.title, description: el.description ?? undefined }
+
+    if (el.type === "quiz" && el.quiz) {
+      out.push({
+        ...base,
+        type: "quiz",
+        config: {
+          id: `quiz-${i}`,
+          title: el.title,
+          description: el.description ?? undefined,
+          questions: el.quiz.questions.map((q, qi) => ({
+            id: `q-${i}-${qi}`,
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation: q.explanation,
+          })),
+        },
+      })
+    } else if (el.type === "dragdrop" && el.dragdrop) {
+      // Items are given in correct order; assign ids, record correct order, then shuffle for display.
+      const ordered = el.dragdrop.orderedItems.map((text, ii) => ({ id: `it-${i}-${ii}`, text }))
+      const correctOrder = ordered.map((it) => it.id)
+      const shuffled = shuffle(ordered)
+      out.push({
+        ...base,
+        type: "dragdrop",
+        config: {
+          id: `dd-${i}`,
+          title: el.title,
+          description: el.description ?? undefined,
+          mode: "ordering",
+          instruction: el.dragdrop.instruction,
+          items: shuffled,
+          correctOrder,
+        },
+      })
+    } else if (el.type === "scenario" && el.scenario) {
+      out.push({
+        ...base,
+        type: "scenario",
+        config: {
+          id: `sc-${i}`,
+          title: el.title,
+          description: el.description ?? undefined,
+          startNodeId: "start",
+          nodes: [
+            {
+              id: "start",
+              type: "scene",
+              title: el.title,
+              description: el.scenario.situation,
+              choices: el.scenario.choices.map((c, ci) => ({
+                id: `ch-${i}-${ci}`,
+                text: c.text,
+                isCorrect: c.isCorrect,
+                feedback: c.feedback,
+              })),
+            },
+          ],
+        },
+      })
+    } else if (el.type === "audio" && el.audio) {
+      out.push({
+        ...base,
+        type: "audio",
+        config: {
+          id: `au-${i}`,
+          audioUrl: "", // no file; the component reads the transcript aloud via text-to-speech
+          title: el.title,
+          description: el.description ?? undefined,
+          transcript: el.audio.transcript,
+          questions: el.audio.questions.map((q, qi) => ({
+            id: `aq-${i}-${qi}`,
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation: q.explanation,
+          })),
+        },
+      })
+    }
+  })
+
+  return out
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  // Guard against returning the identical order for short lists.
+  return a
 }
 
 // Grade a single open formative answer against the model answer.

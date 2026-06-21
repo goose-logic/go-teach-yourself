@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { Lesson, FormativeQuestion } from "@/lib/types"
 import { getLessonStudy, submitFormative, toggleLessonComplete } from "@/app/actions/courses"
 import { Markdown } from "@/components/markdown"
-import { InteractiveRenderer } from "@/components/interactive/interactive-renderer"
+import { InteractiveRenderer, type InteractiveElement } from "@/components/interactive/interactive-renderer"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Check, ChevronDown, Clock, Loader2, ClipboardCheck } from "lucide-react"
@@ -18,7 +18,7 @@ type Study = {
   formativeFeedback: string | null
   imageUrl: string | null
   imageCaption: string | null
-  interactiveElements: unknown
+  interactiveElements: InteractiveElement[] | null
 }
 
 export function LessonItem({
@@ -55,7 +55,7 @@ export function LessonItem({
           formativeFeedback: s.formativeFeedback,
           imageUrl: s.imageUrl,
           imageCaption: s.imageCaption,
-          interactiveElements: s.interactiveElements,
+          interactiveElements: (s.interactiveElements as InteractiveElement[] | null) ?? null,
         })
         if (s.formativeCompleted && s.formativeScore != null) {
           setResult({ score: s.formativeScore, feedback: s.formativeFeedback ?? "" })
@@ -142,15 +142,15 @@ export function LessonItem({
               {study.imageUrl && (
                 <figure className="flex flex-col gap-2">
                   <img src={study.imageUrl} alt={study.imageCaption || "Lesson image"} className="w-full rounded-lg border object-cover" />
-                  {study.imageCaption && <figcaption className="text-sm text-muted-foreground">{study.imageCaption as string}</figcaption>}
+                  {study.imageCaption && <figcaption className="text-sm text-muted-foreground">{study.imageCaption}</figcaption>}
                 </figure>
               )}
 
-              <Markdown>{study.content as string}</Markdown>
+              <Markdown>{study.content}</Markdown>
 
               {/* Interactive elements */}
-              {study.interactiveElements && Array.isArray(study.interactiveElements) && study.interactiveElements.length > 0 && (
-                <InteractiveRenderer elements={study.interactiveElements as any} />
+              {Array.isArray(study.interactiveElements) && study.interactiveElements.length > 0 && (
+                <InteractiveRenderer elements={study.interactiveElements as InteractiveElement[]} />
               )}
 
               {/* Formative check */}

@@ -11,6 +11,7 @@ import {
   generateCurriculum,
   generateLessonContent,
   generateFormative,
+  generateInteractiveElements,
   gradeOpenAnswer,
   generateTest,
   generateProject,
@@ -474,6 +475,7 @@ export async function getLessonStudy(lessonId: number) {
 
   let content = lesson.content
   let formative = lesson.formativeQuestions as FormativeQuestion[] | null
+  let interactive = lesson.interactiveElements as unknown[] | null
 
   if (!content) {
     const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
@@ -515,6 +517,52 @@ export async function getLessonStudy(lessonId: number) {
       .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
   }
 
+  // Generate interactive elements the first time the lesson is opened so every
+  // unit always has something the learner actively does (not just reads).
+  if (!interactive || (Array.isArray(interactive) && interactive.length === 0)) {
+    const [course] = await db.select().from(courses).where(eq(courses.id, lesson.courseId))
+    try {
+      interactive = await generateInteractiveElements({
+        courseTitle: course?.title ?? "Course",
+        lessonTitle: lesson.title,
+        objective: lesson.objective ?? lesson.title,
+        content: content ?? "",
+      })
+    } catch {
+      // Fallback: a minimal listening exercise so the lesson is never purely passive.
+      interactive = [
+        {
+          id: "el-0",
+          type: "audio",
+          title: "Listen & check",
+          config: {
+            id: "au-0",
+            audioUrl: "",
+            title: "Listen & check",
+            transcript: `${lesson.title}. ${lesson.objective ?? "Listen carefully and answer the question."}`,
+            questions: [
+              {
+                id: "aq-0-0",
+                question: `What is the main focus of "${lesson.title}"?`,
+                options: [
+                  lesson.objective ?? "The lesson's core idea",
+                  "An unrelated topic",
+                  "A different subject entirely",
+                ],
+                correctIndex: 0,
+                explanation: "The lesson centres on its stated objective.",
+              },
+            ],
+          },
+        },
+      ]
+    }
+    await db
+      .update(lessons)
+      .set({ interactiveElements: interactive })
+      .where(and(eq(lessons.id, lessonId), eq(lessons.userId, userId)))
+  }
+
   return {
     id: lesson.id,
     title: lesson.title,
@@ -527,7 +575,7 @@ export async function getLessonStudy(lessonId: number) {
     formativeFeedback: lesson.formativeFeedback,
     imageUrl: lesson.imageUrl,
     imageCaption: lesson.imageCaption,
-    interactiveElements: lesson.interactiveElements,
+    interactiveElements: interactive,
   }
 }
 
