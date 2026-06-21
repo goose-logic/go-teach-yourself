@@ -32,12 +32,14 @@ export function AssessmentCard({
   outstandingCharge = false,
   chargeSettled = false,
   passesRemaining = 0,
+  lateFeeCents,
 }: {
   assessment: Assessment
   estimatedMinutes?: number
   dueDate?: Date | null
   overdue?: boolean
   outstandingCharge?: boolean
+  lateFeeCents?: number
   // A settled late charge (paid for, or waived by an extension) on an item that
   // was overdue — used to show a reassuring "caught up" confirmation. Computed by
   // the parent from fresh server data so it stays correct after router.refresh().
@@ -136,7 +138,7 @@ export function AssessmentCard({
         {data.description && <CardDescription className="pt-2">{data.description}</CardDescription>}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {outstandingCharge && <LateFeeFlow assessmentId={data.id} passesRemaining={passesRemaining} />}
+        {outstandingCharge && <LateFeeFlow assessmentId={data.id} passesRemaining={passesRemaining} lateFeeCents={lateFeeCents} />}
         {chargeSettled && <LateFeePaid />}
 
         {!open && (

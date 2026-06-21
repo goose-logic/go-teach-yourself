@@ -157,7 +157,7 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
     </TabsContent>
 
         <TabsContent value="assessments">
-          <AssessmentsTab assessments={detail.assessments} schedule={detail.schedule} course={course} />
+          <AssessmentsTab assessments={detail.assessments} schedule={detail.schedule} course={course} lateFeeCents={detail.lateFeeCents} />
         </TabsContent>
       </Tabs>
     </main>

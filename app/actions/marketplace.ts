@@ -10,9 +10,9 @@ import {
   getSpecialists,
   getSpecialist,
   feeBreakdown,
-  PLATFORM_FEE_PERCENT,
   type SeedReview,
 } from "@/lib/specialists"
+import { getPlatformSettings } from "@/lib/settings"
 
 async function getSession() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -100,7 +100,8 @@ export async function getSpecialistDetail(id: string) {
   const combined =
     totalCount > 0 ? (s.seedRating * s.seedReviewCount + dbSum) / totalCount : s.seedRating
 
-  const fees = feeBreakdown(s.priceCents)
+  const { commissionPercent } = await getPlatformSettings()
+  const fees = feeBreakdown(s.priceCents, commissionPercent)
 
   return {
     specialist: s,
@@ -122,7 +123,8 @@ export async function createBooking(input: {
   const s = getSpecialist(input.specialistId)
   if (!s) throw new Error("Specialist not found")
 
-  const { platformFeeCents, payoutCents, feePercent } = feeBreakdown(s.priceCents)
+  const { commissionPercent } = await getPlatformSettings()
+  const { platformFeeCents, payoutCents, feePercent } = feeBreakdown(s.priceCents, commissionPercent)
 
   const [row] = await db
     .insert(bookings)
@@ -206,7 +208,8 @@ export async function getSpecialistEarnings(specialistId: string) {
   const s = getSpecialist(specialistId)
   if (!s) return null
 
-  const { platformFeeCents, payoutCents, feePercent } = feeBreakdown(s.priceCents)
+  const { commissionPercent } = await getPlatformSettings()
+  const { platformFeeCents, payoutCents, feePercent } = feeBreakdown(s.priceCents, commissionPercent)
 
   // Real platform bookings for this specialist.
   const platformBookings = await db
@@ -241,6 +244,6 @@ export async function getSpecialistEarnings(specialistId: string) {
       feesCents: lifetimeFees,
       payoutCents: lifetimePayout,
     },
-    feePercent: PLATFORM_FEE_PERCENT,
+    feePercent: commissionPercent,
   }
 }
