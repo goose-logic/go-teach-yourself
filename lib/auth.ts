@@ -3,6 +3,10 @@ import { pool } from "@/lib/db"
 
 export const auth = betterAuth({
   database: pool,
+  // BETTER_AUTH_SECRET must be set in Vercel env vars. Without it Better Auth
+  // generates a new random secret on every cold start, which invalidates all
+  // existing sessions after each redeploy.
+  secret: process.env.BETTER_AUTH_SECRET,
   baseURL:
     process.env.BETTER_AUTH_URL ??
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -33,14 +37,13 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
   },
-  ...(process.env.NODE_ENV === "development"
-    ? {
-        advanced: {
-          defaultCookieAttributes: {
-            sameSite: "none" as const,
-            secure: true,
-          },
-        },
-      }
-    : {}),
+  // SameSite=None + Secure is required both in the v0 preview (cross-site
+  // iframe) and on Vercel production (HTTPS). Without this, session cookies are
+  // not sent on cross-origin requests and every page load appears unauthenticated.
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none" as const,
+      secure: true,
+    },
+  },
 })
