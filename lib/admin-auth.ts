@@ -27,6 +27,9 @@ export async function startAdminSession() {
   // requests. (A SameSite=Lax cookie gets set but never returned in that context,
   // which bounces the user straight back to the login page.) This mirrors how
   // the learner-facing Better Auth cookies are configured.
+  // SameSite=None + Secure is required both in the v0 preview (cross-site
+  // iframe) and on Vercel production (HTTPS). A Lax cookie gets set but is
+  // never sent back on the post-login redirect, bouncing the user to login.
   store.set(COOKIE_NAME, sessionToken(), {
     httpOnly: true,
     sameSite: "none",
