@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Fraunces } from "next/font/google"
 import "./globals.css"
+import { PageTracker } from "@/components/page-tracker"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,7 +30,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${fraunces.variable} bg-background`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <PageTracker />
+        {children}
+      </body>
     </html>
   )
 }

@@ -1,8 +1,8 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { platformSettings, user } from "@/lib/db/schema"
-import { eq, sql } from "drizzle-orm"
+import { platformSettings, user, session, pageViews } from "@/lib/db/schema"
+import { eq, sql, desc, gte, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import {
   endAdminSession,
@@ -146,5 +146,170 @@ export async function getAdminAnalytics() {
       completed: coursesCompleted,
       rate: completionRate,
     },
+  }
+}
+
+// --- Real page view analytics ---------------------------------------------
+
+export type PageViewAnalytics = Awaited<ReturnType<typeof getPageViewAnalytics>>
+
+export async function getPageViewAnalytics() {
+  if (!(await isAdminAuthenticated())) throw new Error("Not authorized")
+
+  const now = new Date()
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+  // Total views all time
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(pageViews)
+
+  // Views last 30 days
+  const [{ last30 }] = await db
+    .select({ last30: sql<number>`count(*)::int` })
+    .from(pageViews)
+    .where(gte(pageViews.createdAt, thirtyDaysAgo))
+
+  // Views last 7 days
+  const [{ last7 }] = await db
+    .select({ last7: sql<number>`count(*)::int` })
+    .from(pageViews)
+    .where(gte(pageViews.createdAt, sevenDaysAgo))
+
+  // Unique visitors (by userId or sessionId) last 30 days
+  const [{ uniqueVisitors }] = await db
+    .select({
+      uniqueVisitors: sql<number>`count(distinct coalesce("userId", "sessionId"))::int`,
+    })
+    .from(pageViews)
+    .where(gte(pageViews.createdAt, thirtyDaysAgo))
+
+  // Top pages last 30 days
+  const topPages = await db
+    .select({
+      path: pageViews.path,
+      views: sql<number>`count(*)::int`,
+      uniqueUsers: sql<number>`count(distinct coalesce("userId", "sessionId"))::int`,
+    })
+    .from(pageViews)
+    .where(gte(pageViews.createdAt, thirtyDaysAgo))
+    .groupBy(pageViews.path)
+    .orderBy(desc(sql`count(*)`))
+    .limit(20)
+
+  // Daily views for the last 30 days (for chart)
+  const dailyRaw = await db
+    .select({
+      day: sql<string>`to_char("createdAt", 'YYYY-MM-DD')`,
+      views: sql<number>`count(*)::int`,
+    })
+    .from(pageViews)
+    .where(gte(pageViews.createdAt, thirtyDaysAgo))
+    .groupBy(sql`to_char("createdAt", 'YYYY-MM-DD')`)
+    .orderBy(sql`to_char("createdAt", 'YYYY-MM-DD')`)
+
+  // Fill in any missing days with 0
+  const dailyMap = new Map(dailyRaw.map((r) => [r.day, r.views]))
+  const dailyViews: { day: string; label: string; views: number }[] = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+    const key = d.toISOString().slice(0, 10)
+    const label = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    dailyViews.push({ day: key, label, views: dailyMap.get(key) ?? 0 })
+  }
+
+  return {
+    total: Number(total),
+    last30: Number(last30),
+    last7: Number(last7),
+    uniqueVisitors: Number(uniqueVisitors),
+    topPages,
+    dailyViews,
+  }
+}
+
+// --- Real login / user analytics ------------------------------------------
+
+export type LoginAnalytics = Awaited<ReturnType<typeof getLoginAnalytics>>
+
+export async function getLoginAnalytics() {
+  if (!(await isAdminAuthenticated())) throw new Error("Not authorized")
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+  // All users with their most recent session info
+  const users = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+      // Most recent session
+      lastLoginAt: sql<Date | null>`(
+        SELECT MAX(s."createdAt") FROM session s WHERE s."userId" = "user".id
+      )`,
+      sessionCount: sql<number>`(
+        SELECT count(*)::int FROM session s WHERE s."userId" = "user".id
+      )`,
+      activeSessionCount: sql<number>`(
+        SELECT count(*)::int FROM session s
+        WHERE s."userId" = "user".id AND s."expiresAt" > now()
+      )`,
+      lastIp: sql<string | null>`(
+        SELECT s."ipAddress" FROM session s
+        WHERE s."userId" = "user".id
+        ORDER BY s."createdAt" DESC LIMIT 1
+      )`,
+      lastUserAgent: sql<string | null>`(
+        SELECT s."userAgent" FROM session s
+        WHERE s."userId" = "user".id
+        ORDER BY s."createdAt" DESC LIMIT 1
+      )`,
+    })
+    .from(user)
+    .orderBy(desc(user.createdAt))
+
+  // New sign-ups last 30 days
+  const [{ newSignups }] = await db
+    .select({ newSignups: sql<number>`count(*)::int` })
+    .from(user)
+    .where(gte(user.createdAt, thirtyDaysAgo))
+
+  // Active users (at least one session in the last 30 days)
+  const [{ activeUsers }] = await db
+    .select({
+      activeUsers: sql<number>`count(distinct "userId")::int`,
+    })
+    .from(session)
+    .where(gte(session.createdAt, thirtyDaysAgo))
+
+  // Daily sign-ups last 30 days for chart
+  const dailyRaw = await db
+    .select({
+      day: sql<string>`to_char("createdAt", 'YYYY-MM-DD')`,
+      signups: sql<number>`count(*)::int`,
+    })
+    .from(user)
+    .where(gte(user.createdAt, thirtyDaysAgo))
+    .groupBy(sql`to_char("createdAt", 'YYYY-MM-DD')`)
+    .orderBy(sql`to_char("createdAt", 'YYYY-MM-DD')`)
+
+  const now = new Date()
+  const dailyMap = new Map(dailyRaw.map((r) => [r.day, r.signups]))
+  const dailySignups: { day: string; label: string; signups: number }[] = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+    const key = d.toISOString().slice(0, 10)
+    const label = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    dailySignups.push({ day: key, label, signups: dailyMap.get(key) ?? 0 })
+  }
+
+  return {
+    totalUsers: users.length,
+    newSignups: Number(newSignups),
+    activeUsers: Number(activeUsers),
+    users,
+    dailySignups,
   }
 }
