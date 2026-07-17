@@ -210,6 +210,19 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+// --- Analytics ------------------------------------------------------------
+
+// Every page load records a row here. userId is null for unauthenticated visits.
+export const pageViews = pgTable("page_views", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull(),
+  userId: text("userId"),
+  sessionId: text("sessionId"),
+  referrer: text("referrer"),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 // Timetable entries mapping work onto weeks/days.
 export const scheduleItems = pgTable("schedule_items", {
   id: serial("id").primaryKey(),

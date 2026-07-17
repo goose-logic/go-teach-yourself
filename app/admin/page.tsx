@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation"
 import { isAdminAuthenticated } from "@/lib/admin-auth"
-import { getAdminAnalytics } from "@/app/actions/admin"
+import { getAdminAnalytics, getPageViewAnalytics, getLoginAnalytics } from "@/app/actions/admin"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { PricingControls } from "@/components/admin/pricing-controls"
 import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
+import { PageViewsAnalytics } from "@/components/admin/page-views-analytics"
+import { LoginAnalyticsSection } from "@/components/admin/login-analytics"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export const metadata = {
   title: "Admin dashboard — Go Teach Yourself",
@@ -12,7 +15,11 @@ export const metadata = {
 export default async function AdminPage() {
   if (!(await isAdminAuthenticated())) redirect("/admin/login")
 
-  const analytics = await getAdminAnalytics()
+  const [analytics, pageViewData, loginData] = await Promise.all([
+    getAdminAnalytics(),
+    getPageViewAnalytics(),
+    getLoginAnalytics(),
+  ])
 
   return (
     <div className="min-h-svh bg-secondary/20">
@@ -26,7 +33,26 @@ export default async function AdminPage() {
         </div>
 
         <PricingControls settings={analytics.settings} />
-        <AnalyticsDashboard analytics={analytics} />
+
+        <Tabs defaultValue="overview">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="pageviews">Page views</TabsTrigger>
+            <TabsTrigger value="users">Users &amp; logins</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="mt-6">
+            <AnalyticsDashboard analytics={analytics} />
+          </TabsContent>
+
+          <TabsContent value="pageviews" className="mt-6">
+            <PageViewsAnalytics data={pageViewData} />
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-6">
+            <LoginAnalyticsSection data={loginData} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   )
