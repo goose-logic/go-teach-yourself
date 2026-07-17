@@ -55,7 +55,9 @@ export async function generateCurriculum(params: {
       "numbered 1.. sequentially. Each module has 2-6 lessons with clear objectives and realistic durations. " +
       "EVERY week must end with a summative assessment of type 'test' that covers that week's lessons (set assessment.type to 'test'). " +
       "Do NOT use type 'project' for the weekly assessments — a separate final capstone project is added at the end of the course. " +
-      "Scale the weekly workload to the learner's available hours.",
+      "Scale the weekly workload to the learner's available hours. " +
+      "Also produce 'considerations' explaining your key design decisions, and 'sources' listing 3-10 real, " +
+      "authoritative references (books, papers, frameworks, standards) that informed the curriculum — only cite sources that genuinely exist.",
     prompt:
       `Subject: ${subject}\n` +
       `Goal: ${goal || "general proficiency"}\n` +

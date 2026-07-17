@@ -28,6 +28,37 @@ export const curriculumSchema = z.object({
   summary: z.string().describe("2-3 sentence overview of what the learner will achieve"),
   level: z.enum(["beginner", "intermediate", "advanced"]),
   totalWeeks: z.number().int().min(1).max(52),
+  // Transparency fields — shown to learners so they can trust the course design.
+  considerations: z
+    .array(z.string())
+    .min(3)
+    .max(8)
+    .describe(
+      "3-8 short sentences explaining the key pedagogical decisions made when designing this course: " +
+        "why the topics are sequenced this way, what prior knowledge is assumed, how the pace was calibrated, " +
+        "which frameworks or methodologies informed the content, and any notable trade-offs made.",
+    ),
+  sources: z
+    .array(
+      z.object({
+        title: z.string().describe("the name of the book, paper, standard, framework, or authoritative resource"),
+        author: z.string().nullable().describe("author(s) or organisation, or null if not applicable"),
+        type: z
+          .enum(["book", "paper", "framework", "standard", "course", "documentation", "website"])
+          .describe("the kind of source"),
+        relevance: z
+          .string()
+          .describe("one sentence explaining how this source informed the curriculum"),
+        url: z.string().nullable().describe("a canonical URL if one exists, otherwise null"),
+      }),
+    )
+    .min(3)
+    .max(10)
+    .describe(
+      "3-10 real, authoritative sources that informed the course content: textbooks, academic papers, " +
+        "industry frameworks, official standards, or well-known online courses. Only include sources that genuinely " +
+        "exist and are relevant — do not fabricate citations.",
+    ),
   modules: z
     .array(
       z.object({

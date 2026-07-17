@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { CurriculumTab } from "@/components/curriculum-tab"
 import { TimetableTab } from "@/components/timetable-tab"
 import { AssessmentsTab } from "@/components/assessments-tab"
+import { AboutTab } from "@/components/about-tab"
 import { ArrowLeft, Award, CalendarDays, Clock, Lock, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -139,6 +140,7 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
             Timetable
           </TabsTrigger>
           <TabsTrigger value="assessments">Tests &amp; Projects</TabsTrigger>
+          <TabsTrigger value="about">About this course</TabsTrigger>
         </TabsList>
 
         <TabsContent value="curriculum" className={cn(isFrozen && "pointer-events-none opacity-50")}>
@@ -158,6 +160,10 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
 
         <TabsContent value="assessments">
           <AssessmentsTab assessments={detail.assessments} schedule={detail.schedule} course={course} lateFeeCents={detail.lateFeeCents} />
+        </TabsContent>
+
+        <TabsContent value="about">
+          <AboutTab course={course} />
         </TabsContent>
       </Tabs>
     </main>

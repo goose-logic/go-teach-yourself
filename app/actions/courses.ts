@@ -74,6 +74,12 @@ export async function createCourse(input: {
       status: "active",
       summary: curriculum.summary,
       intake: input.answers,
+      aiMetadata: {
+        model: "GPT-4o mini (via Vercel AI Gateway)",
+        generatedAt: new Date().toISOString(),
+        considerations: curriculum.considerations ?? [],
+        sources: curriculum.sources ?? [],
+      },
     })
     .returning()
 
