@@ -28,6 +28,83 @@ export const curriculumSchema = z.object({
   summary: z.string().describe("2-3 sentence overview of what the learner will achieve"),
   level: z.enum(["beginner", "intermediate", "advanced"]),
   totalWeeks: z.number().int().min(1).max(52),
+  // --- Transparency fields — shown to learners so they understand and can trust the design ---
+
+  // A structured narrative explaining WHY the course was designed as it was.
+  // Each section covers a distinct aspect of the design reasoning.
+  designRationale: z
+    .array(
+      z.object({
+        section: z
+          .string()
+          .describe(
+            "a short heading for this aspect of the design, e.g. 'Topic sequencing', 'Assumed prior knowledge', " +
+              "'Pace and workload', 'Assessment strategy', 'Methodological frameworks', 'Key trade-offs'",
+          ),
+        explanation: z
+          .string()
+          .describe(
+            "2-4 sentences explaining this specific design decision in plain language. Be concrete and specific — " +
+              "reference the actual topics, the actual sequencing choices, and the actual reasons. " +
+              "Do NOT use generic statements that could apply to any course.",
+          ),
+      }),
+    )
+    .min(4)
+    .max(7)
+    .describe(
+      "4-7 sections explaining the design rationale for THIS specific course: why these topics in this order, " +
+        "what knowledge is assumed, how the pace was set, the assessment approach, which frameworks guided content selection, " +
+        "and any notable trade-offs. Every section must be specific to this course — no generic boilerplate.",
+    ),
+
+  // Resources that informed the course AND that learners can use to go deeper.
+  // These must be real, verifiable materials. No fabrication.
+  resources: z
+    .array(
+      z.object({
+        title: z
+          .string()
+          .describe("the exact, real name of the resource"),
+        author: z
+          .string()
+          .nullable()
+          .describe("the real author(s) or publishing organisation, or null if not applicable"),
+        type: z
+          .enum(["book", "paper", "framework", "standard", "online-course", "documentation", "website", "video"])
+          .describe("the kind of resource"),
+        howItInformedTheCourse: z
+          .string()
+          .describe(
+            "one specific sentence explaining exactly how this resource shaped the curriculum content or structure. " +
+              "Be concrete — e.g. 'The OWASP Top Ten threat categories map directly to weeks 3 and 4', not 'this is a useful resource'.",
+          ),
+        learnerValue: z
+          .string()
+          .describe(
+            "one sentence explaining what the learner will gain by reading/watching/using this resource " +
+              "alongside or after the course.",
+          ),
+        url: z
+          .string()
+          .nullable()
+          .describe(
+            "the canonical URL for this resource. For books, link to the publisher or a well-known book page. " +
+              "For frameworks/standards, link to the official source. Do NOT fabricate URLs — only include a URL " +
+              "if you are certain it exists.",
+          ),
+        free: z
+          .boolean()
+          .describe("true if the resource is freely accessible online, false if it requires purchase"),
+      }),
+    )
+    .min(4)
+    .max(10)
+    .describe(
+      "4-10 REAL, verifiable resources that BOTH informed the course content AND are useful for learners to explore. " +
+        "Include a mix of types. CRITICAL: do not fabricate any resource. Only list resources you are certain exist. " +
+        "If you are not sure a book/paper/URL exists, omit it.",
+    ),
   modules: z
     .array(
       z.object({

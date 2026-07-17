@@ -50,12 +50,32 @@ export async function generateCurriculum(params: {
     model: MODEL,
     experimental_output: Output.object({ schema: curriculumSchema }),
     system:
-      "You are an expert curriculum designer. Build a complete, well-sequenced course broken into weekly modules. " +
-      `The course MUST be exactly ${totalWeeks} week(s) long: produce exactly ${totalWeeks} modules, one per week, ` +
-      "numbered 1.. sequentially. Each module has 2-6 lessons with clear objectives and realistic durations. " +
-      "EVERY week must end with a summative assessment of type 'test' that covers that week's lessons (set assessment.type to 'test'). " +
-      "Do NOT use type 'project' for the weekly assessments — a separate final capstone project is added at the end of the course. " +
-      "Scale the weekly workload to the learner's available hours.",
+      "You are an expert curriculum designer. Your output will be shown directly to learners to help them trust the course, " +
+      "so accuracy and honesty are essential.\n\n" +
+
+      "COURSE STRUCTURE RULES:\n" +
+      `- The course MUST be exactly ${totalWeeks} week(s) long: produce exactly ${totalWeeks} modules, one per week, numbered 1 upward.\n` +
+      "- Each module has 2-6 lessons with clear single-sentence objectives and realistic durations.\n" +
+      "- EVERY week ends with a summative assessment of type 'test' covering that week's lessons.\n" +
+      "- Do NOT use type 'project' for weekly assessments — a capstone project is appended separately.\n" +
+      "- Scale weekly workload to match the learner's stated hours per week.\n\n" +
+
+      "DESIGN RATIONALE (designRationale field):\n" +
+      "- Write 4-7 sections, each covering a distinct aspect: topic sequencing, assumed prior knowledge, pace/workload, " +
+      "assessment strategy, methodological frameworks used, and any notable trade-offs.\n" +
+      "- Every section MUST be specific to THIS course. Reference the actual topics, the actual week-by-week order, " +
+      "and the concrete reasons for those choices. Do NOT write generic statements that could describe any course.\n" +
+      "- Example of BAD (too generic): 'Topics are ordered from simple to complex.'\n" +
+      "- Example of GOOD (specific): 'Network fundamentals (Week 1) precede cryptography (Week 3) because understanding " +
+      "how data moves is prerequisite to understanding how it is protected in transit.'\n\n" +
+
+      "RESOURCES (resources field):\n" +
+      "- List 4-10 resources that BOTH shaped this curriculum AND are genuinely useful for learners to explore.\n" +
+      "- CRITICAL: Only include resources you are CERTAIN exist. Do not fabricate book titles, authors, papers, or URLs.\n" +
+      "- If you are not confident a specific book or URL exists, omit it and list something you are certain about.\n" +
+      "- For each resource, explain SPECIFICALLY how it informed the course (e.g. 'The OWASP Top Ten maps to weeks 3-4'), " +
+      "not vaguely ('this is a useful book').\n" +
+      "- Mark free:true only for resources freely accessible online without a paywall.",
     prompt:
       `Subject: ${subject}\n` +
       `Goal: ${goal || "general proficiency"}\n` +

@@ -86,6 +86,9 @@ export const courses = pgTable("courses", {
   unlockPaid: boolean("unlockPaid").notNull().default(false),
   // Raw answers to the AI clarifying questions, kept for context / regeneration.
   intake: jsonb("intake"),
+  // AI transparency: what the model considered and what sources it drew on.
+  // Shape: { model: string, considerations: string[], sources: { title, author, type, relevance, url }[] }
+  aiMetadata: jsonb("aiMetadata"),
   // --- Deadline accountability ---------------------------------------------
   isPaused: boolean("isPaused").notNull().default(false),
   pausedUntil: timestamp("pausedUntil"),
