@@ -140,7 +140,7 @@ export function CourseView({ detail }: { detail: CourseDetail }) {
             Timetable
           </TabsTrigger>
           <TabsTrigger value="assessments">Tests &amp; Projects</TabsTrigger>
-          <TabsTrigger value="about">About this course</TabsTrigger>
+          <TabsTrigger value="about">About &amp; Resources</TabsTrigger>
         </TabsList>
 
         <TabsContent value="curriculum" className={cn(isFrozen && "pointer-events-none opacity-50")}>
