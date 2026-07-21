@@ -7,6 +7,7 @@ import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
 import { PageViewsAnalytics } from "@/components/admin/page-views-analytics"
 import { ProtectedLoginAnalytics } from "@/components/admin/protected-login-analytics"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { BarChart3, Eye, Users } from "lucide-react"
 
 export const metadata = {
   title: "Admin dashboard — Go Teach Yourself",
@@ -35,10 +36,28 @@ export default async function AdminPage() {
         <PricingControls settings={analytics.settings} />
 
         <Tabs defaultValue="overview">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="pageviews">Page views</TabsTrigger>
-            <TabsTrigger value="users">Users &amp; logins</TabsTrigger>
+          <TabsList className="bg-background/50 border border-border p-1.5 h-auto gap-2 rounded-lg">
+            <TabsTrigger 
+              value="overview" 
+              className="rounded-md px-4 py-2.5 gap-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="pageviews"
+              className="rounded-md px-4 py-2.5 gap-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted"
+            >
+              <Eye className="w-4 h-4" />
+              Page views
+            </TabsTrigger>
+            <TabsTrigger 
+              value="users"
+              className="rounded-md px-4 py-2.5 gap-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted"
+            >
+              <Users className="w-4 h-4" />
+              Users &amp; logins
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
