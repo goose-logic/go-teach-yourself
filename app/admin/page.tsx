@@ -5,7 +5,7 @@ import { AdminHeader } from "@/components/admin/admin-header"
 import { PricingControls } from "@/components/admin/pricing-controls"
 import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
 import { PageViewsAnalytics } from "@/components/admin/page-views-analytics"
-import { LoginAnalyticsSection } from "@/components/admin/login-analytics"
+import { ProtectedLoginAnalytics } from "@/components/admin/protected-login-analytics"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export const metadata = {
@@ -50,7 +50,7 @@ export default async function AdminPage() {
           </TabsContent>
 
           <TabsContent value="users" className="mt-6">
-            <LoginAnalyticsSection data={loginData} />
+            <ProtectedLoginAnalytics data={loginData} />
           </TabsContent>
         </Tabs>
       </main>
