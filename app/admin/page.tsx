@@ -36,7 +36,7 @@ export default async function AdminPage() {
         <PricingControls settings={analytics.settings} />
 
         <Tabs defaultValue="overview">
-          <TabsList className="bg-muted border border-muted-foreground/40 p-1.5 h-auto gap-2 rounded-lg">
+          <TabsList className="bg-muted border border-muted-foreground/40 p-1.5 h-auto gap-2 rounded-lg mx-auto w-fit">
             <TabsTrigger 
               value="overview" 
               className="rounded-md px-4 py-2.5 gap-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted"
