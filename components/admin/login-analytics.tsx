@@ -1,11 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import type { LoginAnalytics } from "@/app/actions/admin"
+import { adminResetUserPassword } from "@/app/actions/admin"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Users, UserCheck, UserPlus, Search, TrendingUp } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  Users,
+  UserCheck,
+  UserPlus,
+  Search,
+  TrendingUp,
+  KeyRound,
+  Copy,
+  Check,
+  X,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react"
 
 function formatNum(n: number) {
   return n.toLocaleString("en-US")
@@ -32,8 +46,11 @@ function parseUa(ua: string | null): string {
   return "Other"
 }
 
+type ResetTarget = { id: string; name: string; email: string }
+
 export function LoginAnalyticsSection({ data }: { data: LoginAnalytics }) {
   const [search, setSearch] = useState("")
+  const [resetTarget, setResetTarget] = useState<ResetTarget | null>(null)
 
   const filtered = data.users.filter((u) => {
     if (!search) return true
@@ -135,7 +152,8 @@ export function LoginAnalyticsSection({ data }: { data: LoginAnalytics }) {
                     <th className="pb-2 pr-4 font-medium">Last login</th>
                     <th className="pb-2 pr-4 text-center font-medium">Sessions</th>
                     <th className="pb-2 pr-4 text-center font-medium">Active now</th>
-                    <th className="pb-2 font-medium">Device</th>
+                    <th className="pb-2 pr-4 font-medium">Device</th>
+                    <th className="pb-2 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,8 +177,19 @@ export function LoginAnalyticsSection({ data }: { data: LoginAnalytics }) {
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="py-2.5 text-xs text-muted-foreground">
+                      <td className="py-2.5 pr-4 text-xs text-muted-foreground">
                         {parseUa(u.lastUserAgent)}
+                      </td>
+                      <td className="py-2.5 text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs"
+                          onClick={() => setResetTarget({ id: u.id, name: u.name, email: u.email })}
+                        >
+                          <KeyRound className="h-3 w-3" />
+                          Reset password
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -175,7 +204,138 @@ export function LoginAnalyticsSection({ data }: { data: LoginAnalytics }) {
           )}
         </CardContent>
       </Card>
+
+      {resetTarget && (
+        <ResetPasswordModal target={resetTarget} onClose={() => setResetTarget(null)} />
+      )}
     </section>
+  )
+}
+
+function ResetPasswordModal({ target, onClose }: { target: ResetTarget; onClose: () => void }) {
+  const [isPending, startTransition] = useTransition()
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  function handleReset() {
+    setError(null)
+    startTransition(async () => {
+      const res = await adminResetUserPassword(target.id)
+      if (res.ok && res.tempPassword) {
+        setTempPassword(res.tempPassword)
+      } else {
+        setError(res.error ?? "Something went wrong. Please try again.")
+      }
+    })
+  }
+
+  function handleCopy() {
+    if (!tempPassword) return
+    navigator.clipboard.writeText(tempPassword)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reset-title"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <KeyRound className="h-4 w-4 text-primary" />
+            </div>
+            <h3 id="reset-title" className="font-serif text-lg font-semibold text-foreground">
+              Reset password
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {!tempPassword ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              This will set a new temporary password for{" "}
+              <span className="font-medium text-foreground">{target.name}</span> ({target.email}) and sign them out of
+              all devices. Their current password will stop working.
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              You&apos;ll get a one-time temporary password to share with them over a trusted channel. They should change
+              it after logging back in.
+            </p>
+
+            {error && (
+              <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={onClose} disabled={isPending}>
+                Cancel
+              </Button>
+              <Button onClick={handleReset} disabled={isPending} className="gap-1.5">
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Resetting…
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="h-4 w-4" />
+                    Generate temporary password
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-foreground">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span>
+                Password reset for <span className="font-medium">{target.email}</span>. Copy this temporary password now
+                — it won&apos;t be shown again.
+              </span>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <code className="flex-1 rounded-md border border-border bg-muted px-3 py-2.5 font-mono text-base tracking-wide text-foreground">
+                {tempPassword}
+              </code>
+              <Button variant="outline" size="icon" onClick={handleCopy} aria-label="Copy password">
+                {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+
+            <p className="mt-3 text-xs text-muted-foreground">
+              Share this with {target.name} securely (not over public channels). Ask them to sign in and change it
+              immediately.
+            </p>
+
+            <div className="mt-6 flex justify-end">
+              <Button onClick={onClose}>Done</Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 

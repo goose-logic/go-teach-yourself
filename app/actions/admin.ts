@@ -1,9 +1,11 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { platformSettings, user, session, pageViews } from "@/lib/db/schema"
+import { platformSettings, user, session, pageViews, account } from "@/lib/db/schema"
 import { eq, sql, desc, gte, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { auth } from "@/lib/auth"
+import { randomBytes } from "node:crypto"
 import {
   endAdminSession,
   isAdminAuthenticated,
@@ -312,4 +314,75 @@ export async function getLoginAnalytics() {
     users,
     dailySignups,
   }
+}
+
+// --- Admin password reset --------------------------------------------------
+
+// Generates a readable, secure temporary password (no ambiguous characters).
+function generateTempPassword(): string {
+  const alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
+  const bytes = randomBytes(12)
+  let out = ""
+  for (let i = 0; i < 12; i++) {
+    out += alphabet[bytes[i] % alphabet.length]
+    if (i === 3 || i === 7) out += "-"
+  }
+  return out // e.g. "k4mn-7pqr-9wxy"
+}
+
+/**
+ * Admin-triggered password reset. Sets a new temporary password on the target
+ * user's credential account and revokes all their existing sessions so the old
+ * (forgotten) password can no longer be used. Returns the plain-text temporary
+ * password ONCE so the admin can pass it to the user over a trusted channel.
+ * It is never stored in plain text — only Better Auth's scrypt hash is saved.
+ */
+export async function adminResetUserPassword(
+  userId: string,
+): Promise<{ ok: boolean; error?: string; tempPassword?: string; email?: string }> {
+  if (!(await isAdminAuthenticated())) {
+    return { ok: false, error: "Not authorized." }
+  }
+
+  // Confirm the user exists.
+  const [target] = await db
+    .select({ id: user.id, email: user.email })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1)
+
+  if (!target) {
+    return { ok: false, error: "User not found." }
+  }
+
+  // Find the credential account (email + password) for this user.
+  const [cred] = await db
+    .select({ id: account.id })
+    .from(account)
+    .where(and(eq(account.userId, userId), eq(account.providerId, "credential")))
+    .limit(1)
+
+  if (!cred) {
+    return {
+      ok: false,
+      error: "This user has no email/password login to reset (they may use a different sign-in method).",
+    }
+  }
+
+  // Hash the temp password with Better Auth's own hasher so it validates on login.
+  const tempPassword = generateTempPassword()
+  const ctx = await auth.$context
+  const hash = await ctx.password.hash(tempPassword)
+
+  // Update the stored hash and revoke existing sessions.
+  await db
+    .update(account)
+    .set({ password: hash, updatedAt: new Date() })
+    .where(eq(account.id, cred.id))
+
+  await db.delete(session).where(eq(session.userId, userId))
+
+  revalidatePath("/admin")
+
+  return { ok: true, tempPassword, email: target.email }
 }
